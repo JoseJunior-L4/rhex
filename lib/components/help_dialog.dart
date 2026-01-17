@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:remixicon/remixicon.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
@@ -15,12 +14,22 @@ class _HelpDialogState extends State<HelpDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
     return ShadDialog(
       title: const Text('Help & Shortcuts'),
-      // Use a constraint to ensure it takes up reasonable space
+      constraints: BoxConstraints(
+        maxWidth: screenSize.width * 0.8,
+        maxHeight: screenSize.height * 0.8,
+      ),
+      actions: [
+        ShadButton(
+          child: const Text('Close'),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
       child: Container(
-        width: 700,
-        height: 500,
+        width: screenSize.width * 0.8,
+        height: screenSize.height * 0.8,
         padding: const EdgeInsets.only(top: 16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,12 +68,6 @@ class _HelpDialogState extends State<HelpDialog> {
           ],
         ),
       ),
-      actions: [
-        ShadButton(
-          child: const Text('Close'),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ],
     );
   }
 }
@@ -110,7 +113,7 @@ class _ShortcutsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _ShortcutCategory(
           title: 'File Operations',
@@ -228,7 +231,6 @@ class _ShortcutItem extends StatelessWidget {
     return Row(
       children: [
         SizedBox(
-          width: 140,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: keys.map((key) {

@@ -175,8 +175,9 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
                                 child: Center(
                                   child: LayoutBuilder(
                                     builder: (context, constraints) {
-                                      if (_uiImage == null)
+                                      if (_uiImage == null) {
                                         return const SizedBox();
+                                      }
 
                                       // Calculate fitted dimensions to match standard BoxFit.contain logic
                                       // so we can draw the grid accurately over it.
