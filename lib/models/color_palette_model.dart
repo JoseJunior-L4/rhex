@@ -49,6 +49,11 @@ class ColorPaletteModel {
     }
   }
 
+  void clear() {
+    colors.clear();
+    _saveState();
+  }
+
   bool get canUndo => _currentHistoryIndex > 0;
 
   bool get canRedo => _currentHistoryIndex < _history.length - 1;

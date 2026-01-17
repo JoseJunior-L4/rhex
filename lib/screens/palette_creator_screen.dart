@@ -28,6 +28,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
 
   int _gridSize = 4;
   bool _showHexLabels = true;
+  bool _isImporting = false;
   final GlobalKey _gridKey = GlobalKey();
   final ScrollController _mainGridScrollController = ScrollController();
 
@@ -71,6 +72,43 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
     setState(() {
       _paletteModel.redo();
     });
+  }
+
+  Future<void> _clearPalette() async {
+    if (_paletteModel.colors.isEmpty) return;
+
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return ShadDialog(
+          title: const Text('Clear Palette?'),
+          description: const Text(
+            'Are you sure you want to remove all colors? This action can be undone.',
+          ),
+          actions: [
+            ShadButton.outline(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            ShadButton.destructive(
+              child: const Text('Clear All'),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      setState(() {
+        _paletteModel.clear();
+      });
+      if (mounted) {
+        ShadToaster.of(
+          context,
+        ).show(const ShadToast(description: Text('Palette cleared')));
+      }
+    }
   }
 
   Future<void> _open() async {
@@ -146,6 +184,12 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
   }
 
   Future<void> _importImage() async {
+    if (_isImporting) return; // Prevent spam
+
+    setState(() {
+      _isImporting = true;
+    });
+
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.image,
@@ -178,11 +222,11 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
           }
         }
       }
-    } catch (e) {
+    } finally {
       if (mounted) {
-        ShadToaster.of(
-          context,
-        ).show(ShadToast(description: Text('Error importing image: $e')));
+        setState(() {
+          _isImporting = false;
+        });
       }
     }
   }
@@ -291,6 +335,10 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
           LogicalKeyboardKey.shift,
           LogicalKeyboardKey.keyZ,
         ): const _RedoIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.delete):
+            const _ClearIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.backspace):
+            const _ClearIntent(),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
@@ -307,6 +355,12 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
               if (_paletteModel.canRedo) {
                 _redo();
               }
+              return null;
+            },
+          ),
+          _ClearIntent: CallbackAction<_ClearIntent>(
+            onInvoke: (_) {
+              _clearPalette();
               return null;
             },
           ),
@@ -328,6 +382,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
                         onSave: _save,
                         onExport: _export,
                         onImport: _importImage,
+                        onClear: _clearPalette,
                       ),
                       // Color Grid
                       Expanded(
@@ -379,4 +434,8 @@ class _UndoIntent extends Intent {
 
 class _RedoIntent extends Intent {
   const _RedoIntent();
+}
+
+class _ClearIntent extends Intent {
+  const _ClearIntent();
 }

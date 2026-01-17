@@ -9,6 +9,7 @@ class AppBarComponent extends StatelessWidget {
   final VoidCallback onSave;
   final VoidCallback onExport;
   final VoidCallback onImport;
+  final VoidCallback onClear;
 
   const AppBarComponent({
     super.key,
@@ -18,6 +19,7 @@ class AppBarComponent extends StatelessWidget {
     required this.onSave,
     required this.onExport,
     required this.onImport,
+    required this.onClear,
   });
 
   @override
@@ -73,6 +75,11 @@ class AppBarComponent extends StatelessWidget {
               icon: Remix.arrow_go_forward_line,
               label: 'Redo',
               onPressed: onRedo,
+            ),
+            _ActionButton(
+              icon: Remix.delete_bin_line,
+              label: 'Clear',
+              onPressed: onClear,
             ),
             const SizedBox(width: 16),
             _ActionButton(
