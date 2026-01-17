@@ -93,12 +93,9 @@ class _NavButton extends StatelessWidget {
           ? ShadTheme.of(context).colorScheme.secondary
           : Colors.transparent,
       foregroundColor: isSelected
-          ? null
+          ? ShadTheme.of(context).colorScheme.primary
           : ShadTheme.of(context).colorScheme.foreground,
       shadows: isSelected ? null : [],
-      hoverBackgroundColor: isSelected
-          ? null
-          : ShadTheme.of(context).colorScheme.secondary.withValues(alpha: 0.5),
       onPressed: onTap,
       child: Row(
         children: [Icon(icon, size: 16), const SizedBox(width: 8), Text(label)],
