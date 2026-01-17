@@ -100,7 +100,8 @@ class _SidebarComponentState extends State<SidebarComponent> {
   }
 
   String _getHexColor(Color color) {
-    return '#${(color.value & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+    return '#${color.red.toRadixString(16).padLeft(2, '0')}${color.green.toRadixString(16).padLeft(2, '0')}${color.blue.toRadixString(16).padLeft(2, '0')}'
+        .toUpperCase();
   }
 
   Future<void> _showBatchAddDialog() async {
