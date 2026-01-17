@@ -29,6 +29,7 @@ class SidebarComponent extends StatefulWidget {
 
 class _SidebarComponentState extends State<SidebarComponent> {
   final TextEditingController _hexController = TextEditingController();
+  final ScrollController _historyScrollController = ScrollController();
   Color _currentColor = const Color(0xFF000000);
 
   @override
@@ -40,6 +41,7 @@ class _SidebarComponentState extends State<SidebarComponent> {
   @override
   void dispose() {
     _hexController.dispose();
+    _historyScrollController.dispose();
     super.dispose();
   }
 
@@ -337,31 +339,18 @@ class _SidebarComponentState extends State<SidebarComponent> {
                     : SizedBox(
                         height: 60,
                         child: SingleChildScrollView(
+                          controller: _historyScrollController,
                           scrollDirection: Axis.horizontal,
                           child: Row(
                             children: widget.colors.reversed.map((color) {
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _currentColor = color;
-                                      _hexController.text = _getHexColor(color);
-                                    });
-                                  },
-                                  child: Container(
-                                    width: 52,
-                                    height: 52,
-                                    decoration: BoxDecoration(
-                                      color: color,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: Colors.grey.shade300,
-                                        width: 1,
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                              return _ColorHistoryItem(
+                                color: color,
+                                onTap: () {
+                                  setState(() {
+                                    _currentColor = color;
+                                    _hexController.text = _getHexColor(color);
+                                  });
+                                },
                               );
                             }).toList(),
                           ),
@@ -370,6 +359,37 @@ class _SidebarComponentState extends State<SidebarComponent> {
               ],
             ),
           ),
+
+          // History Scroll Controls
+          if (widget.colors.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    icon: const Icon(Remix.arrow_left_s_line, size: 16),
+                    onPressed: () {
+                      _historyScrollController.animateTo(
+                        _historyScrollController.offset - 60,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Remix.arrow_right_s_line, size: 16),
+                    onPressed: () {
+                      _historyScrollController.animateTo(
+                        _historyScrollController.offset + 60,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
 
           const SizedBox(height: 24),
 
@@ -453,7 +473,7 @@ class _SidebarComponentState extends State<SidebarComponent> {
                   width: double.infinity,
                   height: 44,
                   child: ShadButton(
-                    backgroundColor: Colors.black,
+                    backgroundColor: ShadTheme.of(context).textTheme.muted.color,
                     onPressed: () {
                       widget.onAddColor(_currentColor);
                     },
@@ -550,6 +570,62 @@ class _InstructionItem extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ColorHistoryItem extends StatefulWidget {
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ColorHistoryItem({required this.color, required this.onTap});
+
+  @override
+  State<_ColorHistoryItem> createState() => _ColorHistoryItemState();
+}
+
+class _ColorHistoryItemState extends State<_ColorHistoryItem> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 52,
+            height: 52,
+            transform: _isHovered
+                ? Matrix4.diagonal3Values(1.05, 1.05, 1.0)
+                : Matrix4.identity(),
+            // Align center to make the scale effect grow from center
+            transformAlignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: widget.color,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: _isHovered ? Colors.blue : Colors.grey.shade300,
+                width: _isHovered ? 2 : 1,
+              ),
+              boxShadow: _isHovered
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : [],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

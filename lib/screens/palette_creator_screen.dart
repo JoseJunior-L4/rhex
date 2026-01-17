@@ -29,6 +29,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
   int _gridSize = 4;
   bool _showHexLabels = true;
   final GlobalKey _gridKey = GlobalKey();
+  final ScrollController _mainGridScrollController = ScrollController();
 
   void _addColor(Color color) {
     setState(() {
@@ -40,6 +41,12 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
     setState(() {
       _paletteModel.updateColorAt(index, color);
     });
+  }
+
+  @override
+  void dispose() {
+    _mainGridScrollController.dispose();
+    super.dispose();
   }
 
   void _updateGridSize(int size) {
@@ -325,7 +332,10 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
                       // Color Grid
                       Expanded(
                         child: Scrollbar(
+                          controller: _mainGridScrollController,
+                          thumbVisibility: true,
                           child: SingleChildScrollView(
+                            controller: _mainGridScrollController,
                             child: RepaintBoundary(
                               key: _gridKey,
                               child: ColorGridComponent(

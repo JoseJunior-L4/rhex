@@ -120,31 +120,39 @@ class _ColorTileState extends State<ColorTile> {
               // Hex code overlay (bottom-left)
               if (widget.showHexLabels)
                 Positioned(
-                  left: 16,
-                  bottom: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getContrastColor(
-                        widget.color,
-                      ).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: _getContrastColor(
-                          widget.color,
-                        ).withValues(alpha: 0.2),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      widget.hexCode,
-                      style: ShadTheme.of(context).textTheme.small.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: _getContrastColor(widget.color),
-                        letterSpacing: 0.5,
+                  left: 8,
+                  right: 8,
+                  bottom: 8,
+                  child: Align(
+                    alignment: Alignment.bottomLeft,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getContrastColor(
+                            widget.color,
+                          ).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: _getContrastColor(
+                              widget.color,
+                            ).withValues(alpha: 0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          widget.hexCode,
+                          style: ShadTheme.of(context).textTheme.small.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: _getContrastColor(widget.color),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                       ),
                     ),
                   ),
