@@ -72,6 +72,32 @@ class ColorPaletteModel {
     }
   }
 
+  // Clear history and set current state as the new baseline
+  void clearHistory() {
+    _history.clear();
+    _currentHistoryIndex = -1;
+    _saveState();
+  }
+
+  // Load colors (used when restoring from persistence or opening files)
+  // This replaces all colors and resets the history
+  void loadColors(List<Color> newColors) {
+    colors.clear();
+    colors.addAll(newColors);
+    clearHistory();
+  }
+
+  // Get history for persistence
+  List<List<Color>> getHistory() => _history;
+  int getHistoryIndex() => _currentHistoryIndex;
+
+  // Restore history from persistence
+  void restoreHistory(List<List<Color>> savedHistory, int savedIndex) {
+    _history.clear();
+    _history.addAll(savedHistory.map((snapshot) => List<Color>.from(snapshot)));
+    _currentHistoryIndex = savedIndex;
+  }
+
   String getHexColor(Color color) {
     return '#${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
   }

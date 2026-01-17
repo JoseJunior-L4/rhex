@@ -10,6 +10,7 @@ class AppBarComponent extends StatelessWidget {
   final VoidCallback onExport;
   final VoidCallback onImport;
   final VoidCallback onClear;
+  final VoidCallback onHelp;
 
   const AppBarComponent({
     super.key,
@@ -20,6 +21,7 @@ class AppBarComponent extends StatelessWidget {
     required this.onExport,
     required this.onImport,
     required this.onClear,
+    required this.onHelp,
   });
 
   @override
@@ -105,6 +107,11 @@ class AppBarComponent extends StatelessWidget {
               icon: Remix.download_line,
               label: 'Export',
               onPressed: onExport,
+            ),
+            const SizedBox(width: 16),
+            ShadButton.outline(
+              child: const Icon(Remix.question_line, size: 18),
+              onPressed: onHelp,
             ),
           ],
         ),

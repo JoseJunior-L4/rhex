@@ -13,6 +13,8 @@ class SidebarComponent extends StatefulWidget {
   final Function(int) onGridSizeChange;
   final bool showHexLabels;
   final Function(bool) onToggleHexLabels;
+  final Color? initialColor;
+  final ValueChanged<Color>? onInputColorChange;
 
   const SidebarComponent({
     super.key,
@@ -23,6 +25,8 @@ class SidebarComponent extends StatefulWidget {
     required this.onGridSizeChange,
     required this.showHexLabels,
     required this.onToggleHexLabels,
+    this.initialColor,
+    this.onInputColorChange,
   });
 
   @override
@@ -37,7 +41,18 @@ class _SidebarComponentState extends State<SidebarComponent> {
   @override
   void initState() {
     super.initState();
-    _hexController.text = '#000000';
+    if (widget.initialColor != null) {
+      _currentColor = widget.initialColor!;
+    }
+    _hexController.text = _getHexColor(_currentColor);
+  }
+
+  void _updateCurrentColor(Color color) {
+    setState(() {
+      _currentColor = color;
+      _hexController.text = _getHexColor(color);
+    });
+    widget.onInputColorChange?.call(color);
   }
 
   @override
@@ -74,11 +89,7 @@ class _SidebarComponentState extends State<SidebarComponent> {
             ShadButton(
               child: const Text('Select'),
               onPressed: () {
-                setState(() {
-                  _currentColor = pickerColor;
-                  _hexController.text =
-                      '#${pickerColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
-                });
+                _updateCurrentColor(pickerColor);
                 Navigator.of(context).pop();
               },
             ),
@@ -229,10 +240,7 @@ class _SidebarComponentState extends State<SidebarComponent> {
       random.nextInt(256),
       random.nextInt(256),
     );
-    setState(() {
-      _currentColor = color;
-      _hexController.text = _getHexColor(color);
-    });
+    _updateCurrentColor(color);
     widget.onAddColor(color);
   }
 
@@ -274,9 +282,7 @@ class _SidebarComponentState extends State<SidebarComponent> {
                                 int.parse(value.substring(1), radix: 16) +
                                     0xFF000000,
                               );
-                              setState(() {
-                                _currentColor = color;
-                              });
+                              _updateCurrentColor(color);
                             } catch (e) {
                               // Invalid hex color
                             }
@@ -290,10 +296,7 @@ class _SidebarComponentState extends State<SidebarComponent> {
                                 int.parse(value.substring(1), radix: 16) +
                                     0xFF000000,
                               );
-                              setState(() {
-                                _currentColor = color;
-                                _hexController.text = value.toUpperCase();
-                              });
+                              _updateCurrentColor(color);
                             } catch (e) {
                               // Invalid hex color, reset to current color
                               _hexController.text = _getHexColor(_currentColor);
@@ -405,10 +408,7 @@ class _SidebarComponentState extends State<SidebarComponent> {
                               return _ColorHistoryItem(
                                 color: color,
                                 onTap: () {
-                                  setState(() {
-                                    _currentColor = color;
-                                    _hexController.text = _getHexColor(color);
-                                  });
+                                  _updateCurrentColor(color);
                                 },
                               );
                             }).toList(),
@@ -455,13 +455,9 @@ class _SidebarComponentState extends State<SidebarComponent> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                ShadSlider(
-                  initialValue: widget.gridSize.toDouble(),
-                  min: 1,
-                  max: 16,
-                  onChanged: (value) {
-                    widget.onGridSizeChange(value.toInt());
-                  },
+                _GridSizeSlider(
+                  gridSize: widget.gridSize,
+                  onChanged: widget.onGridSizeChange,
                 ),
               ],
             ),
@@ -502,7 +498,6 @@ class _SidebarComponentState extends State<SidebarComponent> {
                   height: 44,
                   child: Row(
                     children: [
-                      
                       // Add Color Button
                       Expanded(
                         child: ShadButton(
@@ -538,7 +533,6 @@ class _SidebarComponentState extends State<SidebarComponent> {
                           child: const Icon(Remix.dice_line, size: 18),
                         ),
                       ),
-                     
                     ],
                   ),
                 ),
@@ -675,6 +669,57 @@ class _ColorHistoryItemState extends State<_ColorHistoryItem> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _GridSizeSlider extends StatefulWidget {
+  final int gridSize;
+  final ValueChanged<int> onChanged;
+
+  const _GridSizeSlider({required this.gridSize, required this.onChanged});
+
+  @override
+  State<_GridSizeSlider> createState() => _GridSizeSliderState();
+}
+
+class _GridSizeSliderState extends State<_GridSizeSlider> {
+  // We use this key to force ShadSlider to rebuild only when necessary.
+  // We want to rebuild it when 'gridSize' changes EXTERNALLY (e.g. initial load),
+  // but NOT when it changes due to our own dragging.
+  late int _localValue;
+  late Key _sliderKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _localValue = widget.gridSize;
+    _sliderKey = ValueKey(widget.gridSize);
+  }
+
+  @override
+  void didUpdateWidget(_GridSizeSlider oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the widget prop changed, and it DOES NOT match our current local value,
+    // it means it changed externally (e.g. Undo/Redo/Persistence).
+    // so we must force a rebuild.
+    if (widget.gridSize != _localValue) {
+      _localValue = widget.gridSize;
+      _sliderKey = ValueKey('forced_${widget.gridSize}');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ShadSlider(
+      key: _sliderKey,
+      initialValue: widget.gridSize.toDouble(),
+      min: 1,
+      max: 16,
+      onChanged: (value) {
+        _localValue = value.toInt();
+        widget.onChanged(_localValue);
+      },
     );
   }
 }

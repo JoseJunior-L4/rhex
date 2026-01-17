@@ -12,7 +12,9 @@ import '../../components/app_bar_component.dart';
 import '../../components/color_grid_component.dart';
 import '../../components/sidebar_component.dart';
 import '../../components/image_import_wizard.dart';
+import '../../components/help_dialog.dart';
 import '../../models/color_palette_model.dart';
+import '../../services/storage_service.dart';
 
 class PaletteCreatorScreen extends StatefulWidget {
   const PaletteCreatorScreen({super.key});
@@ -25,23 +27,65 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
   final ColorPaletteModel _paletteModel = ColorPaletteModel(
     colors: [], // Start with empty palette
   );
+  final StorageService _storageService = StorageService();
 
   int _gridSize = 4;
   bool _showHexLabels = true;
   bool _isImporting = false;
+  Color _currentInputColor = const Color(0xFF000000); // Default color
   final GlobalKey _gridKey = GlobalKey();
   final ScrollController _mainGridScrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadState();
+  }
+
+  Future<void> _loadState() async {
+    final state = await _storageService.loadPaletteState();
+    if (mounted) {
+      setState(() {
+        _paletteModel.colors = state['colors'];
+        _gridSize = state['gridSize'];
+        _showHexLabels = state['showHexLabels'];
+        if (state['currentColor'] != null) {
+          _currentInputColor = state['currentColor'];
+        }
+        // Restore history if available
+        if (state['history'] != null && state['historyIndex'] != null) {
+          _paletteModel.restoreHistory(
+            state['history'] as List<List<Color>>,
+            state['historyIndex'] as int,
+          );
+        }
+      });
+    }
+  }
+
+  void _persistState() {
+    _storageService.savePaletteState(
+      colors: _paletteModel.colors,
+      gridSize: _gridSize,
+      showHexLabels: _showHexLabels,
+      currentColor: _currentInputColor,
+      history: _paletteModel.getHistory(),
+      historyIndex: _paletteModel.getHistoryIndex(),
+    );
+  }
 
   void _addColor(Color color) {
     setState(() {
       _paletteModel.addColor(color);
     });
+    _persistState();
   }
 
   void _updateColor(int index, Color color) {
     setState(() {
       _paletteModel.updateColorAt(index, color);
     });
+    _persistState();
   }
 
   @override
@@ -54,24 +98,28 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
     setState(() {
       _gridSize = size;
     });
+    _persistState();
   }
 
   void _toggleHexLabels(bool value) {
     setState(() {
       _showHexLabels = value;
     });
+    _persistState();
   }
 
   void _undo() {
     setState(() {
       _paletteModel.undo();
     });
+    _persistState();
   }
 
   void _redo() {
     setState(() {
       _paletteModel.redo();
     });
+    _persistState();
   }
 
   Future<void> _clearPalette() async {
@@ -103,6 +151,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
       setState(() {
         _paletteModel.clear();
       });
+      _persistState();
       if (mounted) {
         ShadToaster.of(
           context,
@@ -124,13 +173,12 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
         Map<String, dynamic> json = jsonDecode(content);
 
         setState(() {
-          _paletteModel.colors = ColorPaletteModel.fromJson(json).colors;
+          _paletteModel.loadColors(ColorPaletteModel.fromJson(json).colors);
           if (json.containsKey('gridSize')) {
             _gridSize = json['gridSize'];
           }
-          // Reset history on load (optional, but good practice)
-          // _paletteModel.clearHistory(); // If you had this method
         });
+        _persistState();
 
         if (mounted) {
           ShadToaster.of(context).show(
@@ -212,6 +260,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
                 _paletteModel.addColor(color);
               }
             });
+            _persistState();
             ShadToaster.of(context).show(
               ShadToast(
                 description: Text(
@@ -322,6 +371,10 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
     );
   }
 
+  void _showHelp() {
+    showDialog(context: context, builder: (context) => const HelpDialog());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Shortcuts(
@@ -339,6 +392,17 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
             const _ClearIntent(),
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.backspace):
             const _ClearIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyS):
+            const _SaveIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyO):
+            const _OpenIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyI):
+            const _ImportIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyE):
+            const _ExportIntent(),
+        LogicalKeySet(LogicalKeyboardKey.f1): const _HelpIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.slash):
+            const _HelpIntent(),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
@@ -364,6 +428,36 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
               return null;
             },
           ),
+          _SaveIntent: CallbackAction<_SaveIntent>(
+            onInvoke: (_) {
+              _save();
+              return null;
+            },
+          ),
+          _OpenIntent: CallbackAction<_OpenIntent>(
+            onInvoke: (_) {
+              _open();
+              return null;
+            },
+          ),
+          _ImportIntent: CallbackAction<_ImportIntent>(
+            onInvoke: (_) {
+              _importImage();
+              return null;
+            },
+          ),
+          _ExportIntent: CallbackAction<_ExportIntent>(
+            onInvoke: (_) {
+              _export();
+              return null;
+            },
+          ),
+          _HelpIntent: CallbackAction<_HelpIntent>(
+            onInvoke: (_) {
+              _showHelp();
+              return null;
+            },
+          ),
         },
         child: Focus(
           autofocus: true,
@@ -383,6 +477,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
                         onExport: _export,
                         onImport: _importImage,
                         onClear: _clearPalette,
+                        onHelp: _showHelp,
                       ),
                       // Color Grid
                       Expanded(
@@ -417,6 +512,11 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
                   onGridSizeChange: _updateGridSize,
                   showHexLabels: _showHexLabels,
                   onToggleHexLabels: _toggleHexLabels,
+                  initialColor: _currentInputColor,
+                  onInputColorChange: (color) {
+                    _currentInputColor = color;
+                    _persistState();
+                  },
                 ),
               ],
             ),
@@ -438,4 +538,24 @@ class _RedoIntent extends Intent {
 
 class _ClearIntent extends Intent {
   const _ClearIntent();
+}
+
+class _SaveIntent extends Intent {
+  const _SaveIntent();
+}
+
+class _OpenIntent extends Intent {
+  const _OpenIntent();
+}
+
+class _ImportIntent extends Intent {
+  const _ImportIntent();
+}
+
+class _ExportIntent extends Intent {
+  const _ExportIntent();
+}
+
+class _HelpIntent extends Intent {
+  const _HelpIntent();
 }
