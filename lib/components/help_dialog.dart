@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import 'package:rhex/l10n/app_localizations.dart';
+
 class HelpDialog extends StatefulWidget {
   const HelpDialog({super.key});
 
@@ -16,14 +18,14 @@ class _HelpDialogState extends State<HelpDialog> {
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     return ShadDialog(
-      title: const Text('Help & Shortcuts'),
+      title: Text(AppLocalizations.of(context)!.menuHelpShortcuts),
       constraints: BoxConstraints(
         maxWidth: screenSize.width * 0.8,
         maxHeight: screenSize.height * 0.8,
       ),
       actions: [
         ShadButton(
-          child: const Text('Close'),
+          child: Text(AppLocalizations.of(context)!.actionClose),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ],
@@ -41,14 +43,14 @@ class _HelpDialogState extends State<HelpDialog> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _NavButton(
-                    label: 'Shortcuts',
+                    label: AppLocalizations.of(context)!.helpTabShortcuts,
                     icon: Remix.keyboard_line,
                     isSelected: _selectedIndex == 0,
                     onTap: () => setState(() => _selectedIndex = 0),
                   ),
                   const SizedBox(height: 4),
                   _NavButton(
-                    label: 'General Usage',
+                    label: AppLocalizations.of(context)!.helpTabUsage,
                     icon: Remix.book_open_line,
                     isSelected: _selectedIndex == 1,
                     onTap: () => setState(() => _selectedIndex = 1),
@@ -113,45 +115,73 @@ class _ShortcutsView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _ShortcutCategory(
-          title: 'File Operations',
+          title: AppLocalizations.of(context)!.helpShortcutFileOps,
           items: [
-            _ShortcutItem(keys: ['Ctrl', 'N'], description: 'Add New Color'),
+            _ShortcutItem(
+              keys: ['Ctrl', 'N'],
+              description: AppLocalizations.of(
+                context,
+              )!.helpShortcutAddNewColor,
+            ),
             _ShortcutItem(
               keys: ['Ctrl', 'S'],
-              description: 'Save Palette (JSON)',
+              description: AppLocalizations.of(
+                context,
+              )!.helpShortcutSavePalette,
             ),
             _ShortcutItem(
               keys: ['Ctrl', 'O'],
-              description: 'Open Palette (JSON)',
+              description: AppLocalizations.of(
+                context,
+              )!.helpShortcutOpenPalette,
             ),
-            _ShortcutItem(keys: ['Ctrl', 'E'], description: 'Export as PNG'),
-            _ShortcutItem(keys: ['Ctrl', 'I'], description: 'Import Image'),
+            _ShortcutItem(
+              keys: ['Ctrl', 'E'],
+              description: AppLocalizations.of(context)!.helpShortcutExportPng,
+            ),
+            _ShortcutItem(
+              keys: ['Ctrl', 'I'],
+              description: AppLocalizations.of(
+                context,
+              )!.helpShortcutImportImage,
+            ),
           ],
         ),
         const SizedBox(height: 24),
         _ShortcutCategory(
-          title: 'Edit & View',
+          title: AppLocalizations.of(context)!.helpShortcutEditView,
           items: [
-            _ShortcutItem(keys: ['Ctrl', 'Z'], description: 'Undo'),
-            _ShortcutItem(keys: ['Ctrl', 'Y'], description: 'Redo'),
+            _ShortcutItem(
+              keys: ['Ctrl', 'Z'],
+              description: AppLocalizations.of(context)!.helpShortcutUndo,
+            ),
+            _ShortcutItem(
+              keys: ['Ctrl', 'Y'],
+              description: AppLocalizations.of(context)!.helpShortcutRedo,
+            ),
             _ShortcutItem(
               keys: ['Ctrl', 'Shift', 'Z'],
-              description: 'Redo (Alternative)',
+              description: AppLocalizations.of(context)!.helpShortcutRedoAlt,
             ),
             _ShortcutItem(
               keys: ['Ctrl', 'Del'],
-              description: 'Clear All Colors',
+              description: AppLocalizations.of(context)!.helpShortcutClearAll,
             ),
-            _ShortcutItem(keys: ['F1'], description: 'Show Help'),
+            _ShortcutItem(
+              keys: ['F1'],
+              description: AppLocalizations.of(context)!.helpShortcutShowHelp,
+            ),
           ],
         ),
         const SizedBox(height: 24),
         _ShortcutCategory(
-          title: 'Color Editing',
+          title: AppLocalizations.of(context)!.helpShortcutColorEditing,
           items: [
             _ShortcutItem(
               keys: ['Right Click'],
-              description: 'Generate Tints & Shades',
+              description: AppLocalizations.of(
+                context,
+              )!.helpShortcutGenerateShades,
             ),
           ],
         ),
@@ -168,31 +198,33 @@ class _UsageView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Adding Colors', style: ShadTheme.of(context).textTheme.large),
+        Text(
+          AppLocalizations.of(context)!.helpSectionAddingColors,
+          style: ShadTheme.of(context).textTheme.large,
+        ),
         const SizedBox(height: 8),
         Text(
-          '• Type a hex code in the sidebar (e.g. #FF5500) and press Enter.\n'
-          '• Click the color preview box to open a visual color picker.\n'
-          '• Use the "Add Color" button to add the current color to your grid.\n'
-          '• Click the Dice icon to generate a random color.',
+          AppLocalizations.of(context)!.helpSectionAddingColorsContent,
           style: ShadTheme.of(context).textTheme.muted.copyWith(height: 1.6),
         ),
         const SizedBox(height: 24),
-        Text('Managing the Grid', style: ShadTheme.of(context).textTheme.large),
+        Text(
+          AppLocalizations.of(context)!.helpSectionManagingGrid,
+          style: ShadTheme.of(context).textTheme.large,
+        ),
         const SizedBox(height: 8),
         Text(
-          '• Click any color tile in the grid to Edit or Delete it.\n'
-          '• Use the Grid Size slider to change how many columns are displayed.\n'
-          '• Toggle "Show Hex Labels" to hide/show text overlays.',
+          AppLocalizations.of(context)!.helpSectionManagingGridContent,
           style: ShadTheme.of(context).textTheme.muted.copyWith(height: 1.6),
         ),
         const SizedBox(height: 24),
-        Text('Import & Export', style: ShadTheme.of(context).textTheme.large),
+        Text(
+          AppLocalizations.of(context)!.helpSectionImportExport,
+          style: ShadTheme.of(context).textTheme.large,
+        ),
         const SizedBox(height: 8),
         Text(
-          '• Import Image: Extract a palette from any image file.\n'
-          '• Save/Open: Save your work as a .json file to work on later.\n'
-          '• Export PNG: Generate a high-quality image of your palette.',
+          AppLocalizations.of(context)!.helpSectionImportExportContent,
           style: ShadTheme.of(context).textTheme.muted.copyWith(height: 1.6),
         ),
       ],

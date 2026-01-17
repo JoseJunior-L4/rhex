@@ -16,9 +16,21 @@ import '../../components/shade_generator_dialog.dart';
 import '../../components/help_dialog.dart';
 import '../../models/color_palette_model.dart';
 import '../../services/storage_service.dart';
+import '../../l10n/app_localizations.dart';
 
 class PaletteCreatorScreen extends StatefulWidget {
-  const PaletteCreatorScreen({super.key});
+  final ThemeMode themeMode;
+  final VoidCallback onToggleTheme;
+  final Locale locale;
+  final ValueChanged<Locale> onLocaleChanged;
+
+  const PaletteCreatorScreen({
+    super.key,
+    required this.themeMode,
+    required this.onToggleTheme,
+    required this.locale,
+    required this.onLocaleChanged,
+  });
 
   @override
   State<PaletteCreatorScreen> createState() => _PaletteCreatorScreenState();
@@ -128,6 +140,11 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
 
   void _showShadeGenerator(int index) {
     final color = _paletteModel.colors[index];
+    setState(() {
+      _currentInputColor = color;
+    });
+    _persistState();
+
     showDialog(
       context: context,
       builder: (context) => ShadeGeneratorDialog(
@@ -160,17 +177,17 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
       context: context,
       builder: (context) {
         return ShadDialog(
-          title: const Text('Clear Palette?'),
-          description: const Text(
-            'Are you sure you want to remove all colors? This action can be undone.',
+          title: Text(AppLocalizations.of(context)!.dialogClearTitle),
+          description: Text(
+            AppLocalizations.of(context)!.dialogClearDescription,
           ),
           actions: [
             ShadButton.outline(
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.actionCancel),
               onPressed: () => Navigator.of(context).pop(false),
             ),
             ShadButton.destructive(
-              child: const Text('Clear All'),
+              child: Text(AppLocalizations.of(context)!.actionClear),
               onPressed: () => Navigator.of(context).pop(true),
             ),
           ],
@@ -184,9 +201,13 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
       });
       _persistState();
       if (mounted) {
-        ShadToaster.of(
-          context,
-        ).show(const ShadToast(description: Text('Palette cleared')));
+        ShadToaster.of(context).show(
+          ShadToast(
+            description: Text(
+              AppLocalizations.of(context)!.toastPaletteCleared,
+            ),
+          ),
+        );
       }
     }
   }
@@ -283,6 +304,8 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
             barrierDismissible: false, // Force user to close via button
             builder: (context) => ImageImportWizard(file: file),
           );
+
+          if (!mounted) return;
 
           if (importedColors != null && importedColors.isNotEmpty) {
             setState(() {
@@ -503,6 +526,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
         child: Focus(
           autofocus: true,
           child: Scaffold(
+            backgroundColor: ShadTheme.of(context).colorScheme.background,
             body: LayoutBuilder(
               builder: (context, constraints) {
                 // Auto-collapse sidebar on small screens
@@ -525,6 +549,10 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
                             onClear: _clearPalette,
                             onHelp: _showHelp,
                             onToggleSidebar: _toggleSidebar,
+                            onToggleTheme: widget.onToggleTheme,
+                            themeMode: widget.themeMode,
+                            locale: widget.locale,
+                            onLocaleChanged: widget.onLocaleChanged,
                           ),
                           // Color Grid
                           Expanded(

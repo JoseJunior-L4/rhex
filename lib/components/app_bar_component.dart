@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:rhex/l10n/app_localizations.dart';
 
-class AppBarComponent extends StatelessWidget {
+class AppBarComponent extends StatefulWidget {
   final VoidCallback onUndo;
   final VoidCallback onRedo;
   final VoidCallback onOpen;
@@ -12,6 +13,10 @@ class AppBarComponent extends StatelessWidget {
   final VoidCallback onClear;
   final VoidCallback onHelp;
   final VoidCallback onToggleSidebar;
+  final VoidCallback onToggleTheme;
+  final ThemeMode themeMode;
+  final Locale locale;
+  final ValueChanged<Locale> onLocaleChanged;
 
   const AppBarComponent({
     super.key,
@@ -24,7 +29,24 @@ class AppBarComponent extends StatelessWidget {
     required this.onClear,
     required this.onHelp,
     required this.onToggleSidebar,
+    required this.onToggleTheme,
+    required this.themeMode,
+    required this.locale,
+    required this.onLocaleChanged,
   });
+
+  @override
+  State<AppBarComponent> createState() => _AppBarComponentState();
+}
+
+class _AppBarComponentState extends State<AppBarComponent> {
+  final ShadPopoverController _popoverController = ShadPopoverController();
+
+  @override
+  void dispose() {
+    _popoverController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,9 +57,9 @@ class AppBarComponent extends StatelessWidget {
     );
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.background,
         border: Border(
-          bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+          bottom: BorderSide(color: theme.colorScheme.border, width: 1),
         ),
       ),
       child: Column(
@@ -53,7 +75,10 @@ class AppBarComponent extends StatelessWidget {
                 // Logo
                 Image.asset('assets/icons/app_icon.png', width: 32, height: 32),
                 const SizedBox(width: 12),
-                Text('Rhex', style: ShadTheme.of(context).textTheme.h4),
+                Text(
+                  AppLocalizations.of(context)!.appTitle,
+                  style: ShadTheme.of(context).textTheme.h4,
+                ),
                 const Spacer(),
               ],
             ),
@@ -62,7 +87,7 @@ class AppBarComponent extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               border: Border(
-                top: BorderSide(color: Colors.grey.shade200, width: 1),
+                top: BorderSide(color: theme.colorScheme.border, width: 1),
               ),
             ),
             child: Row(
@@ -78,27 +103,31 @@ class AppBarComponent extends StatelessWidget {
                               Remix.folder_open_line,
                               size: 16,
                             ),
-                            onPressed: onOpen,
-                            child: const Text('Open'),
+                            onPressed: widget.onOpen,
+                            child: Text(AppLocalizations.of(context)!.menuOpen),
                           ),
                           ShadContextMenuItem(
                             leading: const Icon(Remix.save_line, size: 16),
-                            onPressed: onSave,
-                            child: const Text('Save'),
+                            onPressed: widget.onSave,
+                            child: Text(AppLocalizations.of(context)!.menuSave),
                           ),
                           divider,
                           ShadContextMenuItem(
                             leading: const Icon(Remix.image_add_line, size: 16),
-                            onPressed: onImport,
-                            child: const Text('Import Image'),
+                            onPressed: widget.onImport,
+                            child: Text(
+                              AppLocalizations.of(context)!.menuImportImage,
+                            ),
                           ),
                           ShadContextMenuItem(
                             leading: const Icon(Remix.download_line, size: 16),
-                            onPressed: onExport,
-                            child: const Text('Export PNG'),
+                            onPressed: widget.onExport,
+                            child: Text(
+                              AppLocalizations.of(context)!.menuExportPng,
+                            ),
                           ),
                         ],
-                        child: const Text('File'),
+                        child: Text(AppLocalizations.of(context)!.menuFile),
                       ),
                       ShadMenubarItem(
                         items: [
@@ -107,16 +136,16 @@ class AppBarComponent extends StatelessWidget {
                               Remix.arrow_go_back_line,
                               size: 16,
                             ),
-                            onPressed: onUndo,
-                            child: const Text('Undo'),
+                            onPressed: widget.onUndo,
+                            child: Text(AppLocalizations.of(context)!.menuUndo),
                           ),
                           ShadContextMenuItem(
                             leading: const Icon(
                               Remix.arrow_go_forward_line,
                               size: 16,
                             ),
-                            onPressed: onRedo,
-                            child: const Text('Redo'),
+                            onPressed: widget.onRedo,
+                            child: Text(AppLocalizations.of(context)!.menuRedo),
                           ),
                           divider,
                           ShadContextMenuItem(
@@ -124,21 +153,25 @@ class AppBarComponent extends StatelessWidget {
                               Remix.delete_bin_line,
                               size: 16,
                             ),
-                            onPressed: onClear,
-                            child: const Text('Clear All'),
+                            onPressed: widget.onClear,
+                            child: Text(
+                              AppLocalizations.of(context)!.menuClearAll,
+                            ),
                           ),
                         ],
-                        child: const Text('Edit'),
+                        child: Text(AppLocalizations.of(context)!.menuEdit),
                       ),
                       ShadMenubarItem(
                         items: [
                           ShadContextMenuItem(
                             leading: const Icon(Remix.question_line, size: 16),
-                            onPressed: onHelp,
-                            child: const Text('Help & Shortcuts'),
+                            onPressed: widget.onHelp,
+                            child: Text(
+                              AppLocalizations.of(context)!.menuHelpShortcuts,
+                            ),
                           ),
                         ],
-                        child: const Text('Help'),
+                        child: Text(AppLocalizations.of(context)!.menuHelp),
                       ),
                     ],
                   ),
@@ -146,21 +179,90 @@ class AppBarComponent extends StatelessWidget {
 
                 // Undo/Redo/Clear buttons
                 ShadButton.ghost(
-                  onPressed: onUndo,
+                  onPressed: widget.onUndo,
                   child: const Icon(Remix.arrow_go_back_line, size: 18),
                 ),
 
                 ShadButton.ghost(
-                  onPressed: onClear,
+                  onPressed: widget.onClear,
                   child: const Icon(Remix.delete_bin_line, size: 18),
                 ),
                 ShadButton.ghost(
-                  onPressed: onRedo,
+                  onPressed: widget.onRedo,
                   child: const Icon(Remix.arrow_go_forward_line, size: 18),
                 ),
                 ShadButton.ghost(
-                  onPressed: onToggleSidebar,
+                  onPressed: widget.onToggleSidebar,
                   child: Icon(Remix.menu_line, size: 18),
+                ),
+                ShadPopover(
+                  controller: _popoverController,
+                  child: ShadButton.ghost(
+                    child: const Icon(Remix.earth_line, size: 18),
+                    onPressed: () {
+                      _popoverController.toggle();
+                    },
+                  ),
+                  popover: (context) => SizedBox(
+                    width: 150,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ShadButton.ghost(
+                          onPressed: () {
+                            widget.onLocaleChanged(const Locale('en'));
+                            _popoverController.toggle();
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'English',
+                                style: widget.locale.languageCode == 'en'
+                                    ? const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      )
+                                    : null,
+                              ),
+                              if (widget.locale.languageCode == 'en')
+                                const Icon(Remix.check_line, size: 16),
+                            ],
+                          ),
+                        ),
+                        ShadButton.ghost(
+                          onPressed: () {
+                            widget.onLocaleChanged(const Locale('pt'));
+                            _popoverController.toggle();
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Português',
+                                style: widget.locale.languageCode == 'pt'
+                                    ? const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      )
+                                    : null,
+                              ),
+                              if (widget.locale.languageCode == 'pt')
+                                const Icon(Remix.check_line, size: 16),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                ShadButton.ghost(
+                  onPressed: widget.onToggleTheme,
+                  child: Icon(
+                    widget.themeMode == ThemeMode.dark
+                        ? Remix.sun_line
+                        : Remix.moon_line,
+                    size: 18,
+                  ),
                 ),
               ],
             ),

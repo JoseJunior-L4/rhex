@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import 'package:rhex/l10n/app_localizations.dart';
+
 class ShadeGeneratorDialog extends StatelessWidget {
   final Color baseColor;
   final Function(Color) onAddColor;
@@ -42,7 +44,7 @@ class ShadeGeneratorDialog extends StatelessWidget {
   }
 
   String _getHexColor(Color color) {
-    return '#${color.red.toRadixString(16).padLeft(2, '0')}${color.green.toRadixString(16).padLeft(2, '0')}${color.blue.toRadixString(16).padLeft(2, '0')}'
+    return '#${(color.r * 255).round().toRadixString(16).padLeft(2, '0')}${(color.g * 255).round().toRadixString(16).padLeft(2, '0')}${(color.b * 255).round().toRadixString(16).padLeft(2, '0')}'
         .toUpperCase();
   }
 
@@ -53,9 +55,11 @@ class ShadeGeneratorDialog extends StatelessWidget {
     final screenSize = MediaQuery.of(context).size;
 
     return ShadDialog(
-      title: const Text('Shade Generator'),
+      title: Text(AppLocalizations.of(context)!.dialogShadeGeneratorTitle),
       description: Text(
-        'Generate tints and shades for ${_getHexColor(baseColor)}',
+        AppLocalizations.of(
+          context,
+        )!.dialogShadeGeneratorDescription(_getHexColor(baseColor)),
       ),
       constraints: BoxConstraints(
         maxWidth: screenSize.width * 0.7,
@@ -63,7 +67,7 @@ class ShadeGeneratorDialog extends StatelessWidget {
       ),
       actions: [
         ShadButton.outline(
-          child: const Text('Close'),
+          child: Text(AppLocalizations.of(context)!.actionClose),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ],
@@ -74,21 +78,21 @@ class ShadeGeneratorDialog extends StatelessWidget {
             const SizedBox(height: 16),
             // Base Color
             _ColorSection(
-              title: 'Base Color',
+              title: AppLocalizations.of(context)!.labelBaseColor,
               colors: [baseColor],
               onAddColor: onAddColor,
             ),
             const SizedBox(height: 24),
             // Tints
             _ColorSection(
-              title: 'Tints (Lighter)',
+              title: AppLocalizations.of(context)!.labelTintsLighter,
               colors: tints,
               onAddColor: onAddColor,
             ),
             const SizedBox(height: 24),
             // Shades
             _ColorSection(
-              title: 'Shades (Darker)',
+              title: AppLocalizations.of(context)!.labelShadesDarker,
               colors: shades,
               onAddColor: onAddColor,
             ),
@@ -111,7 +115,7 @@ class _ColorSection extends StatelessWidget {
   });
 
   String _getHexColor(Color color) {
-    return '#${color.red.toRadixString(16).padLeft(2, '0')}${color.green.toRadixString(16).padLeft(2, '0')}${color.blue.toRadixString(16).padLeft(2, '0')}'
+    return '#${(color.r * 255).round().toRadixString(16).padLeft(2, '0')}${(color.g * 255).round().toRadixString(16).padLeft(2, '0')}${(color.b * 255).round().toRadixString(16).padLeft(2, '0')}'
         .toUpperCase();
   }
 
@@ -144,9 +148,11 @@ class _ColorSection extends StatelessWidget {
                 onAddColor(color);
                 ShadToaster.of(context).show(
                   ShadToast(
-                    title: const Text('Color Added'),
+                    title: Text(AppLocalizations.of(context)!.toastColorAdded),
                     description: Text(
-                      '${_getHexColor(color)} added to palette',
+                      AppLocalizations.of(
+                        context,
+                      )!.toastColorAddedMessage(_getHexColor(color)),
                     ),
                   ),
                 );
@@ -246,7 +252,10 @@ class _ColorVariationState extends State<_ColorVariation> {
                     children: [
                       Icon(Remix.add_line, size: 14, color: widget.color),
                       const SizedBox(width: 4),
-                      Text('Add', style: TextStyle(color: widget.color)),
+                      Text(
+                        AppLocalizations.of(context)!.actionAdd,
+                        style: TextStyle(color: widget.color),
+                      ),
                     ],
                   ),
                 ),

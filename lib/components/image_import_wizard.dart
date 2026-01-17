@@ -8,6 +8,8 @@ import 'package:image/image.dart' as img; // 'image' package for pixel access
 import 'package:remixicon/remixicon.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import 'package:rhex/l10n/app_localizations.dart';
+
 class ImageImportWizard extends StatefulWidget {
   final File file;
 
@@ -66,9 +68,15 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
       if (mounted) {
         // Handle error (could close dialog or show toast)
         Navigator.of(context).pop();
-        ShadToaster.of(
-          context,
-        ).show(ShadToast(description: Text('Failed to load image: $e')));
+        ShadToaster.of(context).show(
+          ShadToast(
+            description: Text(
+              AppLocalizations.of(
+                context,
+              )!.toastErrorLoadingImage(e.toString()),
+            ),
+          ),
+        );
       }
     }
   }
@@ -117,8 +125,11 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: ShadTheme.of(context).colorScheme.background,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: ShadTheme.of(context).colorScheme.border),
+      ),
       child: Container(
         width: 1000,
         height: 700,
@@ -134,12 +145,12 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Import Palette from Image',
+                      AppLocalizations.of(context)!.importWizardTitle,
                       style: ShadTheme.of(context).textTheme.h3,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Adjust grid to capture colors',
+                      AppLocalizations.of(context)!.importWizardDescription,
                       style: ShadTheme.of(context).textTheme.muted,
                     ),
                   ],
@@ -164,9 +175,11 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
                           flex: 3,
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
+                              color: ShadTheme.of(context).colorScheme.muted,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey.shade200),
+                              border: Border.all(
+                                color: ShadTheme.of(context).colorScheme.border,
+                              ),
                             ),
                             child: ClipRect(
                               child: InteractiveViewer(
@@ -220,7 +233,11 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
                               SizedBox(
                                 width: double.infinity,
                                 child: ShadButton(
-                                  child: const Text('Import Colors'),
+                                  child: Text(
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.actionImportColors,
+                                  ),
                                   onPressed: () {
                                     Navigator.of(context).pop(_extractedColors);
                                   },
@@ -243,7 +260,7 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Grid Settings',
+          AppLocalizations.of(context)!.labelGridSettings,
           style: ShadTheme.of(
             context,
           ).textTheme.large.copyWith(fontWeight: FontWeight.w600),
@@ -254,7 +271,10 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Rows', style: ShadTheme.of(context).textTheme.small),
+            Text(
+              AppLocalizations.of(context)!.labelRows,
+              style: ShadTheme.of(context).textTheme.small,
+            ),
             Text('$_rows', style: ShadTheme.of(context).textTheme.small),
           ],
         ),
@@ -275,7 +295,10 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Columns', style: ShadTheme.of(context).textTheme.small),
+            Text(
+              AppLocalizations.of(context)!.labelColumns,
+              style: ShadTheme.of(context).textTheme.small,
+            ),
             Text('$_columns', style: ShadTheme.of(context).textTheme.small),
           ],
         ),
@@ -292,7 +315,10 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
         ),
 
         const SizedBox(height: 24),
-        Text('Grid Visibility', style: ShadTheme.of(context).textTheme.small),
+        Text(
+          AppLocalizations.of(context)!.labelGridVisibility,
+          style: ShadTheme.of(context).textTheme.small,
+        ),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -334,7 +360,7 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Extracted Colors',
+                AppLocalizations.of(context)!.labelExtractedColors,
                 style: ShadTheme.of(
                   context,
                 ).textTheme.large.copyWith(fontWeight: FontWeight.w600),
@@ -359,7 +385,9 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
                   decoration: BoxDecoration(
                     color: _extractedColors[index],
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.black12),
+                    border: Border.all(
+                      color: ShadTheme.of(context).colorScheme.border,
+                    ),
                   ),
                 );
               },
@@ -393,7 +421,9 @@ class _ColorOption extends StatelessWidget {
           color: color,
           shape: BoxShape.circle,
           border: Border.all(
-            color: isSelected ? Colors.blue : Colors.grey.shade300,
+            color: isSelected
+                ? ShadTheme.of(context).colorScheme.primary
+                : ShadTheme.of(context).colorScheme.border,
             width: isSelected ? 2 : 1,
           ),
         ),

@@ -10,6 +10,7 @@ class StorageService {
   static const String _keyHistory = 'rhex_history';
   static const String _keyHistoryIndex = 'rhex_history_index';
   static const String _keySidebarCollapsed = 'rhex_sidebar_collapsed';
+  static const String _keyThemeMode = 'rhex_theme_mode';
 
   Future<void> savePaletteState({
     required List<Color> colors,
@@ -95,5 +96,35 @@ class StorageService {
       'historyIndex': historyIndex,
       'sidebarCollapsed': sidebarCollapsed,
     };
+  }
+
+  static const String _keyLocale = 'rhex_locale';
+
+  Future<void> saveThemeMode(ThemeMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyThemeMode, mode.index);
+  }
+
+  Future<ThemeMode> loadThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final index = prefs.getInt(_keyThemeMode);
+    if (index != null && index >= 0 && index < ThemeMode.values.length) {
+      return ThemeMode.values[index];
+    }
+    return ThemeMode.system;
+  }
+
+  Future<void> saveLocale(Locale locale) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyLocale, locale.languageCode);
+  }
+
+  Future<Locale?> loadLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    final languageCode = prefs.getString(_keyLocale);
+    if (languageCode != null) {
+      return Locale(languageCode);
+    }
+    return null;
   }
 }
