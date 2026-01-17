@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
 class ColorGridComponent extends StatelessWidget {
   final List<Color> colors;
   final int gridSize;
   final Function(int) onColorTap;
+  final Function(int, int) onReorder;
+  final bool showHexLabels;
 
   const ColorGridComponent({
     super.key,
     required this.colors,
     required this.gridSize,
     required this.onColorTap,
+    required this.onReorder,
     this.showHexLabels = true,
   });
 
-  final bool showHexLabels;
-
   String _getHexColor(Color color) {
-    return '#${(color.value & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+    return '#${(color.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
   }
 
   @override
@@ -43,7 +45,7 @@ class ColorGridComponent extends StatelessWidget {
       );
     }
 
-    return GridView.builder(
+    return ReorderableGridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -53,8 +55,10 @@ class ColorGridComponent extends StatelessWidget {
         mainAxisSpacing: 0,
       ),
       itemCount: colors.length,
+      onReorder: onReorder,
       itemBuilder: (context, index) {
         return ColorTile(
+          key: ValueKey('color_${colors[index].toARGB32()}_$index'),
           color: colors[index],
           hexCode: _getHexColor(colors[index]),
           onTap: () => onColorTap(index),
@@ -69,6 +73,7 @@ class ColorTile extends StatefulWidget {
   final Color color;
   final String hexCode;
   final VoidCallback onTap;
+  final bool showHexLabels;
 
   const ColorTile({
     super.key,
@@ -77,8 +82,6 @@ class ColorTile extends StatefulWidget {
     required this.onTap,
     required this.showHexLabels,
   });
-
-  final bool showHexLabels;
 
   @override
   State<ColorTile> createState() => _ColorTileState();

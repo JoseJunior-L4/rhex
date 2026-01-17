@@ -35,16 +35,22 @@ class ColorPaletteModel {
     _saveState(); // Save AFTER the change
   }
 
-  void removeColorAt(int index) {
+  void updateColor(int index, Color color) {
     if (index >= 0 && index < colors.length) {
-      colors.removeAt(index);
-      _saveState(); // Save AFTER the change
+      colors[index] = color;
+      _saveState();
     }
   }
 
-  void updateColorAt(int index, Color color) {
+  void reorderColor(int oldIndex, int newIndex) {
+    final color = colors.removeAt(oldIndex);
+    colors.insert(newIndex, color);
+    _saveState();
+  }
+
+  void removeColorAt(int index) {
     if (index >= 0 && index < colors.length) {
-      colors[index] = color;
+      colors.removeAt(index);
       _saveState(); // Save AFTER the change
     }
   }

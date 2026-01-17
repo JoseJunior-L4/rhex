@@ -33,6 +33,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
   bool _showHexLabels = true;
   bool _isImporting = false;
   Color _currentInputColor = const Color(0xFF000000); // Default color
+  bool _isSidebarCollapsed = false;
   final GlobalKey _gridKey = GlobalKey();
   final ScrollController _mainGridScrollController = ScrollController();
 
@@ -59,6 +60,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
             state['historyIndex'] as int,
           );
         }
+        _isSidebarCollapsed = state['sidebarCollapsed'] ?? false;
       });
     }
   }
@@ -71,7 +73,15 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
       currentColor: _currentInputColor,
       history: _paletteModel.getHistory(),
       historyIndex: _paletteModel.getHistoryIndex(),
+      sidebarCollapsed: _isSidebarCollapsed,
     );
+  }
+
+  void _toggleSidebar() {
+    setState(() {
+      _isSidebarCollapsed = !_isSidebarCollapsed;
+    });
+    _persistState();
   }
 
   void _addColor(Color color) {
@@ -83,7 +93,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
 
   void _updateColor(int index, Color color) {
     setState(() {
-      _paletteModel.updateColorAt(index, color);
+      _paletteModel.updateColor(index, color);
     });
     _persistState();
   }
@@ -97,6 +107,13 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
   void _updateGridSize(int size) {
     setState(() {
       _gridSize = size;
+    });
+    _persistState();
+  }
+
+  void _reorderColor(int oldIndex, int newIndex) {
+    setState(() {
+      _paletteModel.reorderColor(oldIndex, newIndex);
     });
     _persistState();
   }
@@ -462,63 +479,85 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
         child: Focus(
           autofocus: true,
           child: Scaffold(
-            body: Row(
-              children: [
-                // Main content area
-                Expanded(
-                  child: Column(
-                    children: [
-                      // App Bar
-                      AppBarComponent(
-                        onUndo: _undo,
-                        onRedo: _redo,
-                        onOpen: _open,
-                        onSave: _save,
-                        onExport: _export,
-                        onImport: _importImage,
-                        onClear: _clearPalette,
-                        onHelp: _showHelp,
-                      ),
-                      // Color Grid
-                      Expanded(
-                        child: Scrollbar(
-                          controller: _mainGridScrollController,
-                          thumbVisibility: true,
-                          child: SingleChildScrollView(
-                            controller: _mainGridScrollController,
-                            child: RepaintBoundary(
-                              key: _gridKey,
-                              child: ColorGridComponent(
-                                colors: _paletteModel.colors,
-                                gridSize: _gridSize,
-                                onColorTap: (index) {
-                                  _editColor(index);
-                                },
-                                showHexLabels: _showHexLabels,
+            body: LayoutBuilder(
+              builder: (context, constraints) {
+                // Auto-collapse sidebar on small screens
+                final bool shouldAutoCollapse = constraints.maxWidth < 1024;
+
+                return Row(
+                  children: [
+                    // Main content area
+                    Expanded(
+                      child: Column(
+                        children: [
+                          // App Bar
+                          AppBarComponent(
+                            onUndo: _undo,
+                            onRedo: _redo,
+                            onOpen: _open,
+                            onSave: _save,
+                            onExport: _export,
+                            onImport: _importImage,
+                            onClear: _clearPalette,
+                            onHelp: _showHelp,
+                            onToggleSidebar: _toggleSidebar,
+                          ),
+                          // Color Grid
+                          Expanded(
+                            child: Scrollbar(
+                              controller: _mainGridScrollController,
+                              thumbVisibility: true,
+                              child: SingleChildScrollView(
+                                controller: _mainGridScrollController,
+                                child: RepaintBoundary(
+                                  key: _gridKey,
+                                  child: ColorGridComponent(
+                                    colors: _paletteModel.colors,
+                                    gridSize: _gridSize,
+                                    onColorTap: (index) {
+                                      _editColor(index);
+                                    },
+                                    onReorder: _reorderColor,
+                                    showHexLabels: _showHexLabels,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                // Sidebar
-                SidebarComponent(
-                  colors: _paletteModel.colors,
-                  gridSize: _gridSize,
-                  onAddColor: _addColor,
-                  onColorUpdate: _updateColor,
-                  onGridSizeChange: _updateGridSize,
-                  showHexLabels: _showHexLabels,
-                  onToggleHexLabels: _toggleHexLabels,
-                  initialColor: _currentInputColor,
-                  onInputColorChange: (color) {
-                    _currentInputColor = color;
-                    _persistState();
-                  },
-                ),
-              ],
+                    ),
+                    // Sidebar with animation
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      width:
+                          (_isSidebarCollapsed && !shouldAutoCollapse) ||
+                              shouldAutoCollapse
+                          ? 0
+                          : 300,
+                      child:
+                          _isSidebarCollapsed && !shouldAutoCollapse ||
+                              shouldAutoCollapse
+                          ? const SizedBox.shrink()
+                          : SidebarComponent(
+                              colors: _paletteModel.colors,
+                              gridSize: _gridSize,
+                              onAddColor: _addColor,
+                              onColorUpdate: _updateColor,
+                              onGridSizeChange: _updateGridSize,
+                              showHexLabels: _showHexLabels,
+                              onToggleHexLabels: _toggleHexLabels,
+                              initialColor: _currentInputColor,
+                              onInputColorChange: (color) {
+                                _currentInputColor = color;
+                                _persistState();
+                              },
+                            ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),

@@ -11,6 +11,7 @@ class AppBarComponent extends StatelessWidget {
   final VoidCallback onImport;
   final VoidCallback onClear;
   final VoidCallback onHelp;
+  final VoidCallback onToggleSidebar;
 
   const AppBarComponent({
     super.key,
@@ -22,128 +23,149 @@ class AppBarComponent extends StatelessWidget {
     required this.onImport,
     required this.onClear,
     required this.onHelp,
+    required this.onToggleSidebar,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = ShadTheme.of(context);
+    final divider = ShadSeparator.horizontal(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      color: theme.colorScheme.muted,
+    );
     return Container(
-      height: 60,
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
           bottom: BorderSide(color: Colors.grey.shade200, width: 1),
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Row(
-          children: [
-            // Logo and Title
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF6366F1),
-                    Color(0xFF8B5CF6),
-                    Color(0xFFEC4899),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Top row with logo and title
+          Container(
+            height: 60,
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                // Logo
+                Image.asset('assets/icons/app_icon.png', width: 32, height: 32),
+                const SizedBox(width: 12),
+                Text('Rhex', style: ShadTheme.of(context).textTheme.h4),
+                const Spacer(),
+              ],
+            ),
+          ),
+          // Menu bar
+          Container(
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Colors.grey.shade200, width: 1),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ShadMenubar(
+                    border: ShadBorder.none,
+                    items: [
+                      ShadMenubarItem(
+                        items: [
+                          ShadContextMenuItem(
+                            leading: const Icon(
+                              Remix.folder_open_line,
+                              size: 16,
+                            ),
+                            onPressed: onOpen,
+                            child: const Text('Open'),
+                          ),
+                          ShadContextMenuItem(
+                            leading: const Icon(Remix.save_line, size: 16),
+                            onPressed: onSave,
+                            child: const Text('Save'),
+                          ),
+                          divider,
+                          ShadContextMenuItem(
+                            leading: const Icon(Remix.image_add_line, size: 16),
+                            onPressed: onImport,
+                            child: const Text('Import Image'),
+                          ),
+                          ShadContextMenuItem(
+                            leading: const Icon(Remix.download_line, size: 16),
+                            onPressed: onExport,
+                            child: const Text('Export PNG'),
+                          ),
+                        ],
+                        child: const Text('File'),
+                      ),
+                      ShadMenubarItem(
+                        items: [
+                          ShadContextMenuItem(
+                            leading: const Icon(
+                              Remix.arrow_go_back_line,
+                              size: 16,
+                            ),
+                            onPressed: onUndo,
+                            child: const Text('Undo'),
+                          ),
+                          ShadContextMenuItem(
+                            leading: const Icon(
+                              Remix.arrow_go_forward_line,
+                              size: 16,
+                            ),
+                            onPressed: onRedo,
+                            child: const Text('Redo'),
+                          ),
+                          divider,
+                          ShadContextMenuItem(
+                            leading: const Icon(
+                              Remix.delete_bin_line,
+                              size: 16,
+                            ),
+                            onPressed: onClear,
+                            child: const Text('Clear All'),
+                          ),
+                        ],
+                        child: const Text('Edit'),
+                      ),
+                      ShadMenubarItem(
+                        items: [
+                          ShadContextMenuItem(
+                            leading: const Icon(Remix.question_line, size: 16),
+                            onPressed: onHelp,
+                            child: const Text('Help & Shortcuts'),
+                          ),
+                        ],
+                        child: const Text('Help'),
+                      ),
+                    ],
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Icon(
-                Remix.palette_line,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Color Palette Creator',
-              style: ShadTheme.of(context).textTheme.h4,
-            ),
-            const Spacer(),
-            // Action buttons
-            _ActionButton(
-              icon: Remix.arrow_go_back_line,
-              label: 'Undo',
-              onPressed: onUndo,
-            ),
-            const SizedBox(width: 8),
-            _ActionButton(
-              icon: Remix.arrow_go_forward_line,
-              label: 'Redo',
-              onPressed: onRedo,
-            ),
-            _ActionButton(
-              icon: Remix.delete_bin_line,
-              label: 'Clear',
-              onPressed: onClear,
-            ),
-            const SizedBox(width: 16),
-            _ActionButton(
-              icon: Remix.folder_open_line,
-              label: 'Open',
-              onPressed: onOpen,
-            ),
 
-            const SizedBox(width: 8),
-            _ActionButton(
-              icon: Remix.image_add_line,
-              label: 'Import',
-              onPressed: onImport,
-            ),
-            const SizedBox(width: 8),
-            _ActionButton(
-              icon: Remix.save_line,
-              label: 'Save',
-              onPressed: onSave,
-            ),
-            const SizedBox(width: 8),
-            _ActionButton(
-              icon: Remix.download_line,
-              label: 'Export',
-              onPressed: onExport,
-            ),
-            const SizedBox(width: 16),
-            ShadButton.outline(
-              child: const Icon(Remix.question_line, size: 18),
-              onPressed: onHelp,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+                // Undo/Redo/Clear buttons
+                ShadButton.ghost(
+                  onPressed: onUndo,
+                  child: const Icon(Remix.arrow_go_back_line, size: 18),
+                ),
 
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onPressed;
-
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextButton.icon(
-      onPressed: onPressed,
-      icon: Icon(
-        icon,
-        size: 16,
-        color: ShadTheme.of(context).textTheme.muted.color,
-      ),
-      label: Text(label, style: ShadTheme.of(context).textTheme.muted),
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                ShadButton.ghost(
+                  onPressed: onClear,
+                  child: const Icon(Remix.delete_bin_line, size: 18),
+                ),
+                ShadButton.ghost(
+                  onPressed: onRedo,
+                  child: const Icon(Remix.arrow_go_forward_line, size: 18),
+                ),
+                ShadButton.ghost(
+                  onPressed: onToggleSidebar,
+                  child: Icon(Remix.menu_line, size: 18),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

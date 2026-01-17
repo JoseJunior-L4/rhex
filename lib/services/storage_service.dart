@@ -9,6 +9,7 @@ class StorageService {
   static const String _keyCurrentColor = 'rhex_current_color';
   static const String _keyHistory = 'rhex_history';
   static const String _keyHistoryIndex = 'rhex_history_index';
+  static const String _keySidebarCollapsed = 'rhex_sidebar_collapsed';
 
   Future<void> savePaletteState({
     required List<Color> colors,
@@ -17,6 +18,7 @@ class StorageService {
     required Color currentColor,
     required List<List<Color>> history,
     required int historyIndex,
+    required bool sidebarCollapsed,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     // Use toARGB32() as .value is deprecated
@@ -34,6 +36,7 @@ class StorageService {
       prefs.setInt(_keyCurrentColor, currentColor.toARGB32()),
       prefs.setString(_keyHistory, jsonEncode(historyValues)),
       prefs.setInt(_keyHistoryIndex, historyIndex),
+      prefs.setBool(_keySidebarCollapsed, sidebarCollapsed),
     ]);
   }
 
@@ -46,6 +49,7 @@ class StorageService {
     Color currentColor = const Color(0xFF000000);
     List<List<Color>> history = [];
     int historyIndex = -1;
+    bool sidebarCollapsed = false;
 
     final String? colorsJson = prefs.getString(_keyColors);
     if (colorsJson != null) {
@@ -80,6 +84,7 @@ class StorageService {
     }
 
     historyIndex = prefs.getInt(_keyHistoryIndex) ?? -1;
+    sidebarCollapsed = prefs.getBool(_keySidebarCollapsed) ?? false;
 
     return {
       'colors': colors,
@@ -88,6 +93,7 @@ class StorageService {
       'currentColor': currentColor,
       'history': history,
       'historyIndex': historyIndex,
+      'sidebarCollapsed': sidebarCollapsed,
     };
   }
 }
