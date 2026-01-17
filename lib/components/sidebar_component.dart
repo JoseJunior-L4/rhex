@@ -9,6 +9,8 @@ class SidebarComponent extends StatefulWidget {
   final Function(Color) onAddColor;
   final Function(int, Color) onColorUpdate;
   final Function(int) onGridSizeChange;
+  final bool showHexLabels;
+  final Function(bool) onToggleHexLabels;
 
   const SidebarComponent({
     super.key,
@@ -17,6 +19,8 @@ class SidebarComponent extends StatefulWidget {
     required this.onAddColor,
     required this.onColorUpdate,
     required this.onGridSizeChange,
+    required this.showHexLabels,
+    required this.onToggleHexLabels,
   });
 
   @override
@@ -410,6 +414,29 @@ class _SidebarComponentState extends State<SidebarComponent> {
                   onChanged: (value) {
                     widget.onGridSizeChange(value.toInt());
                   },
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // View Options Section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Show Hex Labels',
+                  style: ShadTheme.of(context).textTheme.muted.copyWith(
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                ShadSwitch(
+                  value: widget.showHexLabels,
+                  onChanged: widget.onToggleHexLabels,
                 ),
               ],
             ),

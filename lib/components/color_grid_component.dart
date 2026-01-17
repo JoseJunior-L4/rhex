@@ -12,7 +12,10 @@ class ColorGridComponent extends StatelessWidget {
     required this.colors,
     required this.gridSize,
     required this.onColorTap,
+    this.showHexLabels = true,
   });
+
+  final bool showHexLabels;
 
   String _getHexColor(Color color) {
     return '#${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
@@ -55,6 +58,7 @@ class ColorGridComponent extends StatelessWidget {
           color: colors[index],
           hexCode: _getHexColor(colors[index]),
           onTap: () => onColorTap(index),
+          showHexLabels: showHexLabels,
         );
       },
     );
@@ -71,7 +75,10 @@ class ColorTile extends StatefulWidget {
     required this.color,
     required this.hexCode,
     required this.onTap,
+    required this.showHexLabels,
   });
+
+  final bool showHexLabels;
 
   @override
   State<ColorTile> createState() => _ColorTileState();
@@ -110,37 +117,38 @@ class _ColorTileState extends State<ColorTile> {
           ),
           child: Stack(
             children: [
-              // Hex code overlay (bottom-left) - Always visible
-              Positioned(
-                left: 16,
-                bottom: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _getContrastColor(
-                      widget.color,
-                    ).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
+              // Hex code overlay (bottom-left)
+              if (widget.showHexLabels)
+                Positioned(
+                  left: 16,
+                  bottom: 16,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
                       color: _getContrastColor(
                         widget.color,
-                      ).withValues(alpha: 0.2),
-                      width: 1,
+                      ).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: _getContrastColor(
+                          widget.color,
+                        ).withValues(alpha: 0.2),
+                        width: 1,
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    widget.hexCode,
-                    style: ShadTheme.of(context).textTheme.small.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: _getContrastColor(widget.color),
-                      letterSpacing: 0.5,
+                    child: Text(
+                      widget.hexCode,
+                      style: ShadTheme.of(context).textTheme.small.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: _getContrastColor(widget.color),
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                 ),
-              ),
               // Hover indicator
               if (_isHovered)
                 Center(

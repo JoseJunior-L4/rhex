@@ -26,6 +26,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
   );
 
   int _gridSize = 4;
+  bool _showHexLabels = true;
   final GlobalKey _gridKey = GlobalKey();
 
   void _addColor(Color color) {
@@ -43,6 +44,12 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
   void _updateGridSize(int size) {
     setState(() {
       _gridSize = size;
+    });
+  }
+
+  void _toggleHexLabels(bool value) {
+    setState(() {
+      _showHexLabels = value;
     });
   }
 
@@ -283,6 +290,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
                                 onColorTap: (index) {
                                   _editColor(index);
                                 },
+                                showHexLabels: _showHexLabels,
                               ),
                             ),
                           ),
@@ -298,6 +306,8 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
                   onAddColor: _addColor,
                   onColorUpdate: _updateColor,
                   onGridSizeChange: _updateGridSize,
+                  showHexLabels: _showHexLabels,
+                  onToggleHexLabels: _toggleHexLabels,
                 ),
               ],
             ),
