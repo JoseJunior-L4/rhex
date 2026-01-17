@@ -11,6 +11,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../components/app_bar_component.dart';
 import '../../components/color_grid_component.dart';
 import '../../components/sidebar_component.dart';
+import '../../components/image_import_wizard.dart';
 import '../../models/color_palette_model.dart';
 
 class PaletteCreatorScreen extends StatefulWidget {
@@ -133,6 +134,48 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
         ShadToaster.of(
           context,
         ).show(ShadToast(description: Text('Error saving palette: $e')));
+      }
+    }
+  }
+
+  Future<void> _importImage() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+      );
+
+      if (result != null) {
+        File file = File(result.files.single.path!);
+
+        if (mounted) {
+          final List<Color>? importedColors = await showDialog<List<Color>>(
+            context: context,
+            barrierDismissible: false, // Force user to close via button
+            builder: (context) => ImageImportWizard(file: file),
+          );
+
+          if (importedColors != null && importedColors.isNotEmpty) {
+            setState(() {
+              // Append imported colors
+              for (final color in importedColors) {
+                _paletteModel.addColor(color);
+              }
+            });
+            ShadToaster.of(context).show(
+              ShadToast(
+                description: Text(
+                  'Imported ${importedColors.length} colors successfully!',
+                ),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ShadToaster.of(
+          context,
+        ).show(ShadToast(description: Text('Error importing image: $e')));
       }
     }
   }
@@ -277,6 +320,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
                         onOpen: _open,
                         onSave: _save,
                         onExport: _export,
+                        onImport: _importImage,
                       ),
                       // Color Grid
                       Expanded(

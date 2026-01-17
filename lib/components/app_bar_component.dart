@@ -8,6 +8,7 @@ class AppBarComponent extends StatelessWidget {
   final VoidCallback onOpen;
   final VoidCallback onSave;
   final VoidCallback onExport;
+  final VoidCallback onImport;
 
   const AppBarComponent({
     super.key,
@@ -16,6 +17,7 @@ class AppBarComponent extends StatelessWidget {
     required this.onOpen,
     required this.onSave,
     required this.onExport,
+    required this.onImport,
   });
 
   @override
@@ -78,6 +80,13 @@ class AppBarComponent extends StatelessWidget {
               label: 'Open',
               onPressed: onOpen,
             ),
+
+            const SizedBox(width: 8),
+            _ActionButton(
+              icon: Remix.image_add_line,
+              label: 'Import',
+              onPressed: onImport,
+            ),
             const SizedBox(width: 8),
             _ActionButton(
               icon: Remix.save_line,
@@ -112,7 +121,11 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 16, color: ShadTheme.of(context).textTheme.muted.color),
+      icon: Icon(
+        icon,
+        size: 16,
+        color: ShadTheme.of(context).textTheme.muted.color,
+      ),
       label: Text(label, style: ShadTheme.of(context).textTheme.muted),
       style: TextButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
