@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:remixicon/remixicon.dart';
@@ -219,6 +221,21 @@ class _SidebarComponentState extends State<SidebarComponent> {
     }
   }
 
+  void _addRandomColor() {
+    final random = Random();
+    final color = Color.fromARGB(
+      255,
+      random.nextInt(256),
+      random.nextInt(256),
+      random.nextInt(256),
+    );
+    setState(() {
+      _currentColor = color;
+      _hexController.text = _getHexColor(color);
+    });
+    widget.onAddColor(color);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -316,12 +333,54 @@ class _SidebarComponentState extends State<SidebarComponent> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Color History',
-                  style: ShadTheme.of(context).textTheme.muted.copyWith(
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Color History',
+                      style: ShadTheme.of(context).textTheme.muted.copyWith(
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    // History Scroll Controls
+                    if (widget.colors.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 20.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            ShadIconButton.secondary(
+                              icon: const Icon(
+                                Remix.arrow_left_s_line,
+                                size: 16,
+                              ),
+                              onPressed: () {
+                                _historyScrollController.animateTo(
+                                  _historyScrollController.offset - 60,
+                                  duration: const Duration(milliseconds: 200),
+                                  curve: Curves.easeInOut,
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            ShadIconButton.secondary(
+                              icon: const Icon(
+                                Remix.arrow_right_s_line,
+                                size: 16,
+                              ),
+                              onPressed: () {
+                                _historyScrollController.animateTo(
+                                  _historyScrollController.offset + 60,
+                                  duration: const Duration(milliseconds: 200),
+                                  curve: Curves.easeInOut,
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 // Show empty state or horizontal scrollable history
@@ -359,37 +418,6 @@ class _SidebarComponentState extends State<SidebarComponent> {
               ],
             ),
           ),
-
-          // History Scroll Controls
-          if (widget.colors.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  IconButton(
-                    icon: const Icon(Remix.arrow_left_s_line, size: 16),
-                    onPressed: () {
-                      _historyScrollController.animateTo(
-                        _historyScrollController.offset - 60,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeInOut,
-                      );
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Remix.arrow_right_s_line, size: 16),
-                    onPressed: () {
-                      _historyScrollController.animateTo(
-                        _historyScrollController.offset + 60,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeInOut,
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
 
           const SizedBox(height: 24),
 
@@ -472,25 +500,46 @@ class _SidebarComponentState extends State<SidebarComponent> {
                 SizedBox(
                   width: double.infinity,
                   height: 44,
-                  child: ShadButton(
-                    backgroundColor: ShadTheme.of(context).textTheme.muted.color,
-                    onPressed: () {
-                      widget.onAddColor(_currentColor);
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Remix.add_line, size: 18),
-                        SizedBox(width: 8),
-                        Text(
-                          'Add Color',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                  child: Row(
+                    children: [
+                      
+                      // Add Color Button
+                      Expanded(
+                        child: ShadButton(
+                          backgroundColor: ShadTheme.of(
+                            context,
+                          ).textTheme.muted.color,
+                          onPressed: () {
+                            widget.onAddColor(_currentColor);
+                          },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Remix.add_line, size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'Add Color',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Dice Button (Random Color)
+                      SizedBox(
+                        width: 44,
+                        child: ShadButton.outline(
+                          onPressed: _addRandomColor,
+                          padding: EdgeInsets.zero,
+                          child: const Icon(Remix.dice_line, size: 18),
+                        ),
+                      ),
+                     
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),
