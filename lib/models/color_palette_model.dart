@@ -68,10 +68,20 @@ class ColorPaletteModel {
   }
 
   String getHexColor(Color color) {
-    return '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
+    return '#${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
   }
 
   List<String> getColorHistory() {
     return colors.map((color) => getHexColor(color)).toList();
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'colors': colors.map((c) => c.toARGB32()).toList()};
+  }
+
+  factory ColorPaletteModel.fromJson(Map<String, dynamic> json) {
+    return ColorPaletteModel(
+      colors: (json['colors'] as List).map((c) => Color(c as int)).toList(),
+    );
   }
 }

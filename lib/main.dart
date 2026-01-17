@@ -16,7 +16,7 @@ class ColorPaletteCreatorApp extends StatelessWidget {
       title: 'Rhex',
       debugShowCheckedModeBanner: false,
       theme: ShadThemeData(
-        colorScheme: ShadBlueColorScheme.light(),
+        colorScheme: ShadSlateColorScheme.light(),
         textTheme: ShadTextTheme.fromGoogleFont(GoogleFonts.poppins),
       ),
       home: const PaletteCreatorScreen(),

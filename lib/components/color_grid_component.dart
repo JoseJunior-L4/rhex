@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:remixicon/remixicon.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class ColorGridComponent extends StatelessWidget {
   final List<Color> colors;
@@ -14,59 +15,48 @@ class ColorGridComponent extends StatelessWidget {
   });
 
   String _getHexColor(Color color) {
-    return '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
+    return '#${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
   }
 
   @override
   Widget build(BuildContext context) {
     // Show empty state message when no colors
     if (colors.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Remix.palette_line, size: 64, color: Colors.grey.shade300),
-              const SizedBox(height: 16),
-              Text(
-                'No colors yet',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Click "Add Color" in the sidebar to start building your palette',
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Remix.palette_line, size: 64, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text('No colors yet', style: ShadTheme.of(context).textTheme.h3),
+            const SizedBox(height: 8),
+            Text(
+              'Click "Add Color" in the sidebar to start building your palette',
+              style: ShadTheme.of(context).textTheme.muted,
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: gridSize,
-          childAspectRatio: 1.0,
-          crossAxisSpacing: 0,
-          mainAxisSpacing: 0,
-        ),
-        itemCount: colors.length,
-        itemBuilder: (context, index) {
-          return ColorTile(
-            color: colors[index],
-            hexCode: _getHexColor(colors[index]),
-            onTap: () => onColorTap(index),
-          );
-        },
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: gridSize,
+        childAspectRatio: 1.0,
+        crossAxisSpacing: 0,
+        mainAxisSpacing: 0,
       ),
+      itemCount: colors.length,
+      itemBuilder: (context, index) {
+        return ColorTile(
+          color: colors[index],
+          hexCode: _getHexColor(colors[index]),
+          onTap: () => onColorTap(index),
+        );
+      },
     );
   }
 }
@@ -93,20 +83,25 @@ class _ColorTileState extends State<ColorTile> {
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
+      cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
+          transform: _isHovered
+              ? Matrix4.identity()
+              : Matrix4.diagonal3Values(1.005, 1.005, 1.0),
+          transformAlignment: Alignment.center,
           margin: EdgeInsets.all(_isHovered ? 8 : 0),
           decoration: BoxDecoration(
             color: widget.color,
-            borderRadius: BorderRadius.circular(_isHovered ? 12 : 0),
+            borderRadius: BorderRadius.circular(_isHovered ? 8 : 0),
             boxShadow: _isHovered
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 20,
                       offset: const Offset(0, 4),
                     ),
@@ -125,17 +120,20 @@ class _ColorTileState extends State<ColorTile> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: _getContrastColor(widget.color).withOpacity(0.1),
+                    color: _getContrastColor(
+                      widget.color,
+                    ).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: _getContrastColor(widget.color).withOpacity(0.2),
+                      color: _getContrastColor(
+                        widget.color,
+                      ).withValues(alpha: 0.2),
                       width: 1,
                     ),
                   ),
                   child: Text(
                     widget.hexCode,
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: ShadTheme.of(context).textTheme.small.copyWith(
                       fontWeight: FontWeight.w600,
                       color: _getContrastColor(widget.color),
                       letterSpacing: 0.5,
@@ -149,7 +147,9 @@ class _ColorTileState extends State<ColorTile> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: _getContrastColor(widget.color).withOpacity(0.1),
+                      color: _getContrastColor(
+                        widget.color,
+                      ).withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -168,8 +168,7 @@ class _ColorTileState extends State<ColorTile> {
 
   Color _getContrastColor(Color color) {
     // Calculate relative luminance
-    final luminance =
-        (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue) / 255;
+    final luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
     return luminance > 0.5 ? Colors.black : Colors.white;
   }
 }

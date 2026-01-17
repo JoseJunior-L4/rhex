@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -70,7 +69,7 @@ class _SidebarComponentState extends State<SidebarComponent> {
                 setState(() {
                   _currentColor = pickerColor;
                   _hexController.text =
-                      '#${pickerColor.value.toRadixString(16).substring(2).toUpperCase()}';
+                      '#${pickerColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
                 });
                 Navigator.of(context).pop();
               },
@@ -82,7 +81,136 @@ class _SidebarComponentState extends State<SidebarComponent> {
   }
 
   String _getHexColor(Color color) {
-    return '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
+    return '#${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
+  }
+
+  Future<void> _showBatchAddDialog() async {
+    final TextEditingController batchController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return ShadDialog(
+          title: const Text('Batch Add Colors'),
+          description: const Text(
+            'Paste hex codes (one per line). Format: #RRGGBB or RRGGBB',
+          ),
+          actions: [
+            ShadButton.outline(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ShadButton(
+              child: const Text('Process'),
+              onPressed: () async {
+                Navigator.of(context).pop(); // Close input dialog
+                await _processBatchColors(batchController.text);
+              },
+            ),
+          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 16),
+              ShadInput(
+                controller: batchController,
+                maxLines: 8,
+                minLines: 4,
+                placeholder: const Text('#FF0000\n00FF00\n#0000FF'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _processBatchColors(String text) async {
+    List<String> lines = text.split('\n');
+    List<Color> validColors = [];
+    bool processingStopped = false;
+
+    for (int i = 0; i < lines.length; i++) {
+      String line = lines[i].trim();
+      if (line.isEmpty) continue;
+
+      // Clean # if exists
+      String cleanHex = line.replaceAll('#', '').toUpperCase();
+
+      // Validate
+      bool isValid = false;
+      if (cleanHex.length == 6) {
+        try {
+          int.parse(cleanHex, radix: 16);
+          isValid = true;
+        } catch (e) {
+          isValid = false;
+        }
+      }
+
+      if (isValid) {
+        validColors.add(Color(int.parse('FF$cleanHex', radix: 16)));
+      } else {
+        // Show Error Dialog
+        bool? shouldSkip = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return ShadDialog(
+              title: const Text('Invalid Color Found'),
+              description: Text(
+                'Line ${i + 1}: "$line" is not a valid hex code.',
+              ),
+              actions: [
+                ShadButton.outline(
+                  child: const Text('Stop All'),
+                  onPressed: () {
+                    Navigator.of(context).pop(false);
+                  },
+                ),
+                ShadButton(
+                  child: const Text('Skip & Continue'),
+                  onPressed: () {
+                    Navigator.of(context).pop(true);
+                  },
+                ),
+              ],
+            );
+          },
+        );
+
+        if (shouldSkip != true) {
+          processingStopped = true;
+          break; // Stop processing
+        }
+      }
+    }
+
+    // Add valid colors found so far
+    for (var color in validColors) {
+      widget.onAddColor(color);
+    }
+
+    if (mounted) {
+      int processedCount = validColors.length;
+      if (processedCount > 0) {
+        ShadToaster.of(context).show(
+          ShadToast(
+            description: Text(
+              processingStopped
+                  ? 'Added $processedCount valid colors. Processing stopped.'
+                  : 'Successfully added $processedCount colors!',
+            ),
+          ),
+        );
+      } else if (!processingStopped) {
+        ShadToaster.of(context).show(
+          const ShadToast(description: Text('No valid colors found to add.')),
+        );
+      }
+    }
   }
 
   @override
@@ -102,12 +230,10 @@ class _SidebarComponentState extends State<SidebarComponent> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Color Input',
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: ShadTheme.of(context).textTheme.muted.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -115,46 +241,9 @@ class _SidebarComponentState extends State<SidebarComponent> {
                 Row(
                   children: [
                     Expanded(
-                      child: TextField(
+                      child: ShadInput(
                         controller: _hexController,
-                        decoration: InputDecoration(
-                          hintText: '#000000',
-                          hintStyle: TextStyle(
-                            color: Colors.grey.shade400,
-                            fontSize: 14,
-                          ),
-                          filled: true,
-                          fillColor: const Color(0xFFF8FAFC),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                              color: Colors.grey.shade300,
-                              width: 1,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                              color: Colors.grey.shade300,
-                              width: 1,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF6366F1),
-                              width: 2,
-                            ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
-                          ),
-                        ),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        placeholder: const Text('#000000'),
                         onChanged: (value) {
                           if (value.length == 7 && value.startsWith('#')) {
                             try {
@@ -221,12 +310,10 @@ class _SidebarComponentState extends State<SidebarComponent> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Color History',
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: ShadTheme.of(context).textTheme.muted.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -238,11 +325,8 @@ class _SidebarComponentState extends State<SidebarComponent> {
                         child: Center(
                           child: Text(
                             'No colors in history yet',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade400,
-                              fontStyle: FontStyle.italic,
-                            ),
+                            style: ShadTheme.of(context).textTheme.muted
+                                .copyWith(fontStyle: FontStyle.italic),
                           ),
                         ),
                       )
@@ -294,12 +378,10 @@ class _SidebarComponentState extends State<SidebarComponent> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Grid Size',
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: ShadTheme.of(context).textTheme.muted.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF64748B),
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -307,20 +389,14 @@ class _SidebarComponentState extends State<SidebarComponent> {
                       children: [
                         Text(
                           '${widget.gridSize}',
-                          style: const TextStyle(
-                            fontSize: 12,
+                          style: ShadTheme.of(context).textTheme.muted.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF64748B),
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Text(
+                        Text(
                           '16',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xFF94A3B8),
-                          ),
+                          style: ShadTheme.of(context).textTheme.muted,
                         ),
                       ],
                     ),
@@ -344,28 +420,55 @@ class _SidebarComponentState extends State<SidebarComponent> {
           // Add Color Button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: ShadButton.outline(
-                onPressed: () {
-                  widget.onAddColor(_currentColor);
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Remix.add_line, size: 18),
-                    SizedBox(width: 8),
-                    Text(
-                      'Add Color',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+            child: Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ShadButton(
+                    backgroundColor: Colors.black,
+                    onPressed: () {
+                      widget.onAddColor(_currentColor);
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Remix.add_line, size: 18),
+                        SizedBox(width: 8),
+                        Text(
+                          'Add Color',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ShadButton.outline(
+                    onPressed: _showBatchAddDialog,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Remix.list_check_2, size: 18),
+                        SizedBox(width: 8),
+                        Text(
+                          'Batch Add',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -416,11 +519,7 @@ class _InstructionItem extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF64748B),
-              height: 1.5,
-            ),
+            style: ShadTheme.of(context).textTheme.muted.copyWith(height: 1.5),
           ),
         ),
       ],

@@ -1,4 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:ui' as ui;
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -20,16 +26,11 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
   );
 
   int _gridSize = 4;
+  final GlobalKey _gridKey = GlobalKey();
 
   void _addColor(Color color) {
     setState(() {
       _paletteModel.addColor(color);
-    });
-  }
-
-  void _removeColor(int index) {
-    setState(() {
-      _paletteModel.removeColorAt(index);
     });
   }
 
@@ -57,25 +58,130 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
     });
   }
 
-  void _open() {
-    // Implement open functionality
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Open functionality')));
+  Future<void> _open() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+
+      if (result != null) {
+        File file = File(result.files.single.path!);
+        String content = await file.readAsString();
+        Map<String, dynamic> json = jsonDecode(content);
+
+        setState(() {
+          _paletteModel.colors = ColorPaletteModel.fromJson(json).colors;
+          if (json.containsKey('gridSize')) {
+            _gridSize = json['gridSize'];
+          }
+          // Reset history on load (optional, but good practice)
+          // _paletteModel.clearHistory(); // If you had this method
+        });
+
+        if (mounted) {
+          ShadToaster.of(context).show(
+            const ShadToast(description: Text('Palette loaded successfully!')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ShadToaster.of(
+          context,
+        ).show(ShadToast(description: Text('Error loading palette: $e')));
+      }
+    }
   }
 
-  void _save() {
-    // Implement save functionality
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Saved successfully!')));
+  Future<void> _save() async {
+    try {
+      String? outputFile = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Palette',
+        fileName: 'palette.json',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+
+      if (outputFile != null) {
+        // Ensure extension
+        if (!outputFile.endsWith('.json')) {
+          outputFile += '.json';
+        }
+
+        final file = File(outputFile);
+        final Map<String, dynamic> data = _paletteModel.toJson();
+        data['gridSize'] = _gridSize;
+
+        await file.writeAsString(jsonEncode(data));
+
+        if (mounted) {
+          ShadToaster.of(context).show(
+            const ShadToast(description: Text('Palette saved successfully!')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ShadToaster.of(
+          context,
+        ).show(ShadToast(description: Text('Error saving palette: $e')));
+      }
+    }
   }
 
-  void _export() {
-    // Implement export functionality
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Export functionality')));
+  Future<void> _export() async {
+    try {
+      if (_paletteModel.colors.isEmpty) {
+        if (mounted) {
+          ShadToaster.of(
+            context,
+          ).show(const ShadToast(description: Text('No colors to export!')));
+        }
+        return;
+      }
+
+      // Capture the widget as an image
+      RenderRepaintBoundary boundary =
+          _gridKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+      Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+      // Save the image
+      String? outputFile = await FilePicker.platform.saveFile(
+        dialogTitle: 'Export Palette as PNG',
+        fileName: 'palette.png',
+        type: FileType.custom,
+        allowedExtensions: ['png'],
+      );
+
+      if (outputFile != null) {
+        // Ensure extension
+        if (!outputFile.endsWith('.png')) {
+          outputFile += '.png';
+        }
+
+        final file = File(outputFile);
+        await file.writeAsBytes(pngBytes);
+
+        if (mounted) {
+          ShadToaster.of(context).show(
+            const ShadToast(
+              description: Text('Palette exported successfully!'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ShadToaster.of(
+          context,
+        ).show(ShadToast(description: Text('Error exporting palette: $e')));
+      }
+    }
   }
 
   void _editColor(int index) {
@@ -167,12 +273,19 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
                       ),
                       // Color Grid
                       Expanded(
-                        child: ColorGridComponent(
-                          colors: _paletteModel.colors,
-                          gridSize: _gridSize,
-                          onColorTap: (index) {
-                            _editColor(index);
-                          },
+                        child: Scrollbar(
+                          child: SingleChildScrollView(
+                            child: RepaintBoundary(
+                              key: _gridKey,
+                              child: ColorGridComponent(
+                                colors: _paletteModel.colors,
+                                gridSize: _gridSize,
+                                onColorTap: (index) {
+                                  _editColor(index);
+                                },
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],

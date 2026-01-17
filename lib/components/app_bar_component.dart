@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:remixicon/remixicon.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class AppBarComponent extends StatelessWidget {
   final VoidCallback onUndo;
@@ -54,13 +55,9 @@ class AppBarComponent extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            const Text(
+            Text(
               'Color Palette Creator',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF0F172A),
-              ),
+              style: ShadTheme.of(context).textTheme.h4,
             ),
             const Spacer(),
             // Action buttons
@@ -115,15 +112,8 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 16, color: const Color(0xFF64748B)),
-      label: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 13,
-          color: Color(0xFF64748B),
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+      icon: Icon(icon, size: 16, color: ShadTheme.of(context).textTheme.muted.color),
+      label: Text(label, style: ShadTheme.of(context).textTheme.muted),
       style: TextButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
