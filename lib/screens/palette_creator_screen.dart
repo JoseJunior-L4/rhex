@@ -12,6 +12,7 @@ import '../../components/app_bar_component.dart';
 import '../../components/color_grid_component.dart';
 import '../../components/sidebar_component.dart';
 import '../../components/image_import_wizard.dart';
+import '../../components/shade_generator_dialog.dart';
 import '../../components/help_dialog.dart';
 import '../../models/color_palette_model.dart';
 import '../../services/storage_service.dart';
@@ -123,6 +124,19 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
       _showHexLabels = value;
     });
     _persistState();
+  }
+
+  void _showShadeGenerator(int index) {
+    final color = _paletteModel.colors[index];
+    showDialog(
+      context: context,
+      builder: (context) => ShadeGeneratorDialog(
+        baseColor: color,
+        onAddColor: (generatedColor) {
+          _addColor(generatedColor);
+        },
+      ),
+    );
   }
 
   void _undo() {
@@ -352,6 +366,12 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
   }
 
   void _editColor(int index) {
+    // Set the current input color to the selected color
+    setState(() {
+      _currentInputColor = _paletteModel.colors[index];
+    });
+    _persistState();
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -379,6 +399,10 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
               child: const Text('Update'),
               onPressed: () {
                 _updateColor(index, pickerColor);
+                setState(() {
+                  _currentInputColor = pickerColor;
+                });
+                _persistState();
                 Navigator.of(context).pop();
               },
             ),
@@ -517,6 +541,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
                                     onColorTap: (index) {
                                       _editColor(index);
                                     },
+                                    onColorRightClick: _showShadeGenerator,
                                     onReorder: _reorderColor,
                                     showHexLabels: _showHexLabels,
                                   ),

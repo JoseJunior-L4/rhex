@@ -354,7 +354,7 @@ class _SidebarComponentState extends State<SidebarComponent> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            ShadIconButton.secondary(
+                            ShadIconButton.ghost(
                               icon: const Icon(
                                 Remix.arrow_left_s_line,
                                 size: 16,
@@ -367,8 +367,8 @@ class _SidebarComponentState extends State<SidebarComponent> {
                                 );
                               },
                             ),
-                            const SizedBox(width: 8),
-                            ShadIconButton.secondary(
+                            const SizedBox(width: 4),
+                            ShadIconButton.ghost(
                               icon: const Icon(
                                 Remix.arrow_right_s_line,
                                 size: 16,
@@ -562,58 +562,8 @@ class _SidebarComponentState extends State<SidebarComponent> {
               ],
             ),
           ),
-
-          const SizedBox(height: 24),
-
-          // Instructions
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _InstructionItem(
-                  icon: Remix.circle_fill,
-                  text: 'Click the color circle to open the color picker',
-                ),
-                const SizedBox(height: 8),
-                _InstructionItem(
-                  icon: Remix.hashtag,
-                  text: 'Type hex codes directly or select from history',
-                ),
-                const SizedBox(height: 8),
-                _InstructionItem(
-                  icon: Remix.layout_grid_line,
-                  text: 'Adjust grid size to organize your palette',
-                ),
-              ],
-            ),
-          ),
         ],
       ),
-    );
-  }
-}
-
-class _InstructionItem extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _InstructionItem({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 14, color: const Color(0xFF94A3B8)),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: ShadTheme.of(context).textTheme.muted.copyWith(height: 1.5),
-          ),
-        ),
-      ],
     );
   }
 }

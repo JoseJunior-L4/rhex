@@ -7,6 +7,7 @@ class ColorGridComponent extends StatelessWidget {
   final List<Color> colors;
   final int gridSize;
   final Function(int) onColorTap;
+  final Function(int)? onColorRightClick;
   final Function(int, int) onReorder;
   final bool showHexLabels;
 
@@ -15,6 +16,7 @@ class ColorGridComponent extends StatelessWidget {
     required this.colors,
     required this.gridSize,
     required this.onColorTap,
+    this.onColorRightClick,
     required this.onReorder,
     this.showHexLabels = true,
   });
@@ -62,6 +64,9 @@ class ColorGridComponent extends StatelessWidget {
           color: colors[index],
           hexCode: _getHexColor(colors[index]),
           onTap: () => onColorTap(index),
+          onRightClick: onColorRightClick != null
+              ? () => onColorRightClick!(index)
+              : null,
           showHexLabels: showHexLabels,
         );
       },
@@ -73,6 +78,7 @@ class ColorTile extends StatefulWidget {
   final Color color;
   final String hexCode;
   final VoidCallback onTap;
+  final VoidCallback? onRightClick;
   final bool showHexLabels;
 
   const ColorTile({
@@ -80,6 +86,7 @@ class ColorTile extends StatefulWidget {
     required this.color,
     required this.hexCode,
     required this.onTap,
+    this.onRightClick,
     required this.showHexLabels,
   });
 
@@ -98,6 +105,7 @@ class _ColorTileState extends State<ColorTile> {
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
         onTap: widget.onTap,
+        onSecondaryTap: widget.onRightClick,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           transform: _isHovered

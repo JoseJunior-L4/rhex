@@ -145,6 +145,16 @@ class _ShortcutsView extends StatelessWidget {
             _ShortcutItem(keys: ['F1'], description: 'Show Help'),
           ],
         ),
+        const SizedBox(height: 24),
+        _ShortcutCategory(
+          title: 'Color Editing',
+          items: [
+            _ShortcutItem(
+              keys: ['Right Click'],
+              description: 'Generate Tints & Shades',
+            ),
+          ],
+        ),
       ],
     );
   }
