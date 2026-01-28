@@ -278,6 +278,7 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
             Text('$_rows', style: ShadTheme.of(context).textTheme.small),
           ],
         ),
+        const SizedBox(height: 8),
         ShadSlider(
           initialValue: _rows.toDouble(),
           min: 1,
@@ -302,6 +303,7 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
             Text('$_columns', style: ShadTheme.of(context).textTheme.small),
           ],
         ),
+        const SizedBox(height: 8),
         ShadSlider(
           initialValue: _columns.toDouble(),
           min: 1,
