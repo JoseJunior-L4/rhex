@@ -556,25 +556,17 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
                           ),
                           // Color Grid
                           Expanded(
-                            child: Scrollbar(
-                              controller: _mainGridScrollController,
-                              thumbVisibility: true,
-                              child: SingleChildScrollView(
-                                controller: _mainGridScrollController,
-                                child: RepaintBoundary(
-                                  key: _gridKey,
-                                  child: ColorGridComponent(
-                                    colors: _paletteModel.colors,
-                                    gridSize: _gridSize,
-                                    onColorTap: (index) {
-                                      _editColor(index);
-                                    },
-                                    onColorRightClick: _showShadeGenerator,
-                                    onReorder: _reorderColor,
-                                    showHexLabels: _showHexLabels,
-                                  ),
-                                ),
-                              ),
+                            child: ColorGridComponent(
+                              scrollController: _mainGridScrollController,
+                              globalKey: _gridKey,
+                              colors: _paletteModel.colors,
+                              gridSize: _gridSize,
+                              onColorTap: (index) {
+                                _editColor(index);
+                              },
+                              onColorRightClick: _showShadeGenerator,
+                              onReorder: _reorderColor,
+                              showHexLabels: _showHexLabels,
                             ),
                           ),
                         ],

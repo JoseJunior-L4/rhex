@@ -10,6 +10,8 @@ class ColorGridComponent extends StatelessWidget {
   final Function(int)? onColorRightClick;
   final Function(int, int) onReorder;
   final bool showHexLabels;
+  final ScrollController? scrollController;
+  final GlobalKey<State<StatefulWidget>>? globalKey;
 
   const ColorGridComponent({
     super.key,
@@ -19,6 +21,8 @@ class ColorGridComponent extends StatelessWidget {
     this.onColorRightClick,
     required this.onReorder,
     this.showHexLabels = true,
+    this.scrollController,
+    this.globalKey,
   });
 
   String _getHexColor(Color color) {
@@ -47,29 +51,38 @@ class ColorGridComponent extends StatelessWidget {
       );
     }
 
-    return ReorderableGridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: gridSize,
-        childAspectRatio: 1.0,
-        crossAxisSpacing: 0,
-        mainAxisSpacing: 0,
+    return Scrollbar(
+      controller: scrollController,
+      child: SingleChildScrollView(
+        controller: scrollController,
+        child: RepaintBoundary(
+          key: globalKey,
+          child: ReorderableGridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: gridSize,
+              childAspectRatio: 1.0,
+              crossAxisSpacing: 0,
+              mainAxisSpacing: 0,
+            ),
+            itemCount: colors.length,
+            onReorder: onReorder,
+            itemBuilder: (context, index) {
+              return ColorTile(
+                key: ValueKey('color_${colors[index].toARGB32()}_$index'),
+                color: colors[index],
+                hexCode: _getHexColor(colors[index]),
+                onTap: () => onColorTap(index),
+                onRightClick: onColorRightClick != null
+                    ? () => onColorRightClick!(index)
+                    : null,
+                showHexLabels: showHexLabels,
+              );
+            },
+          ),
+        ),
       ),
-      itemCount: colors.length,
-      onReorder: onReorder,
-      itemBuilder: (context, index) {
-        return ColorTile(
-          key: ValueKey('color_${colors[index].toARGB32()}_$index'),
-          color: colors[index],
-          hexCode: _getHexColor(colors[index]),
-          onTap: () => onColorTap(index),
-          onRightClick: onColorRightClick != null
-              ? () => onColorRightClick!(index)
-              : null,
-          showHexLabels: showHexLabels,
-        );
-      },
     );
   }
 }
