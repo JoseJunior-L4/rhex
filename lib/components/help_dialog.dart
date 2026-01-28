@@ -37,8 +37,7 @@ class _HelpDialogState extends State<HelpDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Sidebar
-            SizedBox(
-              width: 180,
+            IntrinsicWidth(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [

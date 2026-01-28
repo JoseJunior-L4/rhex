@@ -26,6 +26,19 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
   Color _gridColor = Colors.green;
   bool _isLoading = true;
 
+  // Advanced Settings
+  bool _isAdvancedMode = false;
+  double _offsetX = 0.0;
+  double _offsetY = 0.0;
+  double _marginTop = 0.0;
+  double _marginRight = 0.0;
+  double _marginBottom = 0.0;
+  double _marginLeft = 0.0;
+  double _paddingX = 0.0; // Horizontal padding between cells
+  double _paddingY = 0.0; // Vertical padding between cells
+  double _cellSpacingX = 0.0; // Additional spacing
+  double _cellSpacingY = 0.0;
+
   // Image state
   ui.Image? _uiImage; // For rendering
   img.Image? _decodedImage; // For pixel data extraction
@@ -87,14 +100,50 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
     final image = _decodedImage!;
     final List<Color> colors = [];
 
-    final cellWidth = image.width / _columns;
-    final cellHeight = image.height / _rows;
+    // Calculate effective area dimensions
+    final double effectiveWidth =
+        image.width.toDouble() - _marginLeft - _marginRight;
+    final double effectiveHeight =
+        image.height.toDouble() - _marginTop - _marginBottom;
+
+    // Calculate total padding/spacing reduction
+    // Padding is internal to cell calculation logic (shrinking the sample area)
+    // Spacing is external (gap between cells)
+    // Here we'll treat them combined for the grid layout logic as per standard sprite editors
+    // Note: Usually "padding" in sprite editors shrinks the sprite within the grid cell,
+    // while "spacing" adds gap between grid cells.
+
+    // Spacing reduces the available space for cells *across the grid*
+    // Total spacing width = (columns - 1) * spacingX
+    final double totalSpacingX = (_columns - 1) * _cellSpacingX;
+    final double totalSpacingY = (_rows - 1) * _cellSpacingY;
+
+    // Remaining space for actual cells
+    final double availableWidthForCells = effectiveWidth - totalSpacingX;
+    final double availableHeightForCells = effectiveHeight - totalSpacingY;
+
+    // Base cell dimensions
+    final double cellWidth = availableWidthForCells / _columns;
+    final double cellHeight = availableHeightForCells / _rows;
 
     for (int y = 0; y < _rows; y++) {
       for (int x = 0; x < _columns; x++) {
-        // Sample the center of the cell
-        final centerX = (x * cellWidth + cellWidth / 2).floor();
-        final centerY = (y * cellHeight + cellHeight / 2).floor();
+        // Calculate cell origin
+        final double cellLeft =
+            _marginLeft + _offsetX + (x * (cellWidth + _cellSpacingX));
+        final double cellTop =
+            _marginTop + _offsetY + (y * (cellHeight + _cellSpacingY));
+
+        // Apply padding (which shrinks the sampling area from the edges of the cell)
+        // Padding X shrinks left and right, Padding Y shrinks top and bottom
+        final double sampleRegionLeft = cellLeft + _paddingX;
+        final double sampleRegionTop = cellTop + _paddingY;
+        final double sampleRegionWidth = cellWidth - (_paddingX * 2);
+        final double sampleRegionHeight = cellHeight - (_paddingY * 2);
+
+        // Sample the center of the padded region
+        final centerX = (sampleRegionLeft + sampleRegionWidth / 2).floor();
+        final centerY = (sampleRegionTop + sampleRegionHeight / 2).floor();
 
         // Ensure bounds
         final safeX = centerX.clamp(0, image.width - 1);
@@ -131,8 +180,8 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
         side: BorderSide(color: ShadTheme.of(context).colorScheme.border),
       ),
       child: Container(
-        width: 1000,
-        height: 700,
+        width: 1200,
+        height: 800,
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,6 +254,16 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
                                           columns: _columns,
                                           color: _gridColor,
                                           imageSize: imgSize,
+                                          offsetX: _offsetX,
+                                          offsetY: _offsetY,
+                                          marginTop: _marginTop,
+                                          marginRight: _marginRight,
+                                          marginBottom: _marginBottom,
+                                          marginLeft: _marginLeft,
+                                          paddingX: _paddingX,
+                                          paddingY: _paddingY,
+                                          cellSpacingX: _cellSpacingX,
+                                          cellSpacingY: _cellSpacingY,
                                         ),
                                         child: RawImage(
                                           image: _uiImage,
@@ -256,99 +315,267 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
   }
 
   Widget _buildGridSettings(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.labelGridSettings,
+                style: ShadTheme.of(
+                  context,
+                ).textTheme.large.copyWith(fontWeight: FontWeight.w600),
+              ),
+              // Advanced Toggle
+              Row(
+                children: [
+                  Text(
+                    'Advanced',
+                    style: ShadTheme.of(context).textTheme.small,
+                  ),
+                  const SizedBox(width: 8),
+                  ShadSwitch(
+                    value: _isAdvancedMode,
+                    onChanged: (val) {
+                      setState(() {
+                        _isAdvancedMode = val;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Rows
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.labelRows,
+                style: ShadTheme.of(context).textTheme.small,
+              ),
+              Text('$_rows', style: ShadTheme.of(context).textTheme.small),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ShadSlider(
+            initialValue: _rows.toDouble(),
+            min: 1,
+            max: 50,
+            onChanged: (val) {
+              setState(() {
+                _rows = val.toInt();
+              });
+              _extractColors();
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // Columns
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.labelColumns,
+                style: ShadTheme.of(context).textTheme.small,
+              ),
+              Text('$_columns', style: ShadTheme.of(context).textTheme.small),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ShadSlider(
+            initialValue: _columns.toDouble(),
+            min: 1,
+            max: 50,
+            onChanged: (val) {
+              setState(() {
+                _columns = val.toInt();
+              });
+              _extractColors();
+            },
+          ),
+
+          // Advanced Settings Panel
+          if (_isAdvancedMode) ...[
+            const SizedBox(height: 24),
+            _buildAdvancedSettings(context),
+          ],
+
+          const SizedBox(height: 24),
+          Text(
+            AppLocalizations.of(context)!.labelGridVisibility,
+            style: ShadTheme.of(context).textTheme.small,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _ColorOption(
+                color: Colors.green,
+                isSelected: _gridColor == Colors.green,
+                onTap: () => setState(() => _gridColor = Colors.green),
+              ),
+              const SizedBox(width: 8),
+              _ColorOption(
+                color: Colors.red,
+                isSelected: _gridColor == Colors.red,
+                onTap: () => setState(() => _gridColor = Colors.red),
+              ),
+              const SizedBox(width: 8),
+              _ColorOption(
+                color: Colors.white,
+                isSelected: _gridColor == Colors.white,
+                onTap: () => setState(() => _gridColor = Colors.white),
+              ),
+              const SizedBox(width: 8),
+              _ColorOption(
+                color: Colors.black,
+                isSelected: _gridColor == Colors.black,
+                onTap: () => setState(() => _gridColor = Colors.black),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdvancedSettings(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          AppLocalizations.of(context)!.labelGridSettings,
-          style: ShadTheme.of(
-            context,
-          ).textTheme.large.copyWith(fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: ShadTheme.of(
+              context,
+            ).colorScheme.muted.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: ShadTheme.of(context).colorScheme.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Offsets & Margins',
+                style: ShadTheme.of(
+                  context,
+                ).textTheme.small.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
 
-        // Rows
+              // Offset X/Y
+              _buildSliderControl(
+                label: 'Offset X',
+                value: _offsetX,
+                min: 0,
+                max: 100,
+                onChanged: (val) {
+                  setState(() => _offsetX = val);
+                  _extractColors();
+                },
+              ),
+              _buildSliderControl(
+                label: 'Offset Y',
+                value: _offsetY,
+                min: 0,
+                max: 100,
+                onChanged: (val) {
+                  setState(() => _offsetY = val);
+                  _extractColors();
+                },
+              ),
+
+              const Divider(height: 24),
+
+              // Padding/Spacing
+              _buildSliderControl(
+                label: 'Padding X',
+                value: _paddingX,
+                min: 0,
+                max: 50,
+                onChanged: (val) {
+                  setState(() => _paddingX = val);
+                  _extractColors();
+                },
+              ),
+              _buildSliderControl(
+                label: 'Padding Y',
+                value: _paddingY,
+                min: 0,
+                max: 50,
+                onChanged: (val) {
+                  setState(() => _paddingY = val);
+                  _extractColors();
+                },
+              ),
+              _buildSliderControl(
+                label: 'Spacing X',
+                value: _cellSpacingX,
+                min: 0,
+                max: 50,
+                onChanged: (val) {
+                  setState(() => _cellSpacingX = val);
+                  _extractColors();
+                },
+              ),
+              _buildSliderControl(
+                label: 'Spacing Y',
+                value: _cellSpacingY,
+                min: 0,
+                max: 50,
+                onChanged: (val) {
+                  setState(() => _cellSpacingY = val);
+                  _extractColors();
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSliderControl({
+    required String label,
+    required double value,
+    required double min,
+    required double max,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            Text(label, style: const TextStyle(fontSize: 12)),
             Text(
-              AppLocalizations.of(context)!.labelRows,
-              style: ShadTheme.of(context).textTheme.small,
-            ),
-            Text('$_rows', style: ShadTheme.of(context).textTheme.small),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ShadSlider(
-          initialValue: _rows.toDouble(),
-          min: 1,
-          max: 20,
-          onChanged: (val) {
-            setState(() {
-              _rows = val.toInt();
-            });
-            _extractColors();
-          },
-        ),
-        const SizedBox(height: 12),
-
-        // Columns
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.labelColumns,
-              style: ShadTheme.of(context).textTheme.small,
-            ),
-            Text('$_columns', style: ShadTheme.of(context).textTheme.small),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ShadSlider(
-          initialValue: _columns.toDouble(),
-          min: 1,
-          max: 20,
-          onChanged: (val) {
-            setState(() {
-              _columns = val.toInt();
-            });
-            _extractColors();
-          },
-        ),
-
-        const SizedBox(height: 24),
-        Text(
-          AppLocalizations.of(context)!.labelGridVisibility,
-          style: ShadTheme.of(context).textTheme.small,
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            _ColorOption(
-              color: Colors.green,
-              isSelected: _gridColor == Colors.green,
-              onTap: () => setState(() => _gridColor = Colors.green),
-            ),
-            const SizedBox(width: 8),
-            _ColorOption(
-              color: Colors.red,
-              isSelected: _gridColor == Colors.red,
-              onTap: () => setState(() => _gridColor = Colors.red),
-            ),
-            const SizedBox(width: 8),
-            _ColorOption(
-              color: Colors.white,
-              isSelected: _gridColor == Colors.white,
-              onTap: () => setState(() => _gridColor = Colors.white),
-            ),
-            const SizedBox(width: 8),
-            _ColorOption(
-              color: Colors.black,
-              isSelected: _gridColor == Colors.black,
-              onTap: () => setState(() => _gridColor = Colors.black),
+              value.toStringAsFixed(1),
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
         ),
+        SizedBox(
+          height: 24,
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 2,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
+            ),
+            child: Slider(
+              value: value,
+              min: min,
+              max: max,
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
       ],
     );
   }
@@ -439,65 +666,140 @@ class _GridPainter extends CustomPainter {
   final int columns;
   final Color color;
   final Size imageSize;
+  final double offsetX;
+  final double offsetY;
+  final double marginTop;
+  final double marginRight;
+  final double marginBottom;
+  final double marginLeft;
+  final double paddingX;
+  final double paddingY;
+  final double cellSpacingX;
+  final double cellSpacingY;
 
   _GridPainter({
     required this.rows,
     required this.columns,
     required this.color,
     required this.imageSize,
+    required this.offsetX,
+    required this.offsetY,
+    required this.marginTop,
+    required this.marginRight,
+    required this.marginBottom,
+    required this.marginLeft,
+    required this.paddingX,
+    required this.paddingY,
+    required this.cellSpacingX,
+    required this.cellSpacingY,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     // Calculate scaling to determine where the image actually is within the widget 'size'
-    // 'size' is the CustomPaint size (widget size)
-    // 'imageSize' is the actual pixel dimensions of the image
-
-    // FittedSizes calculates how BoxFit.contain scales and positions the content
     final fitted = applyBoxFit(BoxFit.contain, imageSize, size);
     final destRect = Alignment.center.inscribe(
       fitted.destination,
       Offset.zero & size,
     );
 
-    // We only draw inside destRect
+    // Calculate scale factor between rendered size and actual image size
+    final double scaleX = destRect.width / imageSize.width;
+    // scaleY unused as we assume uniform scaling for square pixels/grids generally
+    // final double scaleY = destRect.height / imageSize.height;
+
+    // Helper to scale values
+    double s(double val) => val * scaleX; // Assuming uniform scaling for now
+
     final Paint paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
-    // Draw vertical lines
-    final cellWidth = destRect.width / columns;
-    for (int i = 0; i <= columns; i++) {
-      final x = destRect.left + i * cellWidth;
-      canvas.drawLine(
-        Offset(x, destRect.top),
-        Offset(x, destRect.bottom),
-        paint,
-      );
-    }
+    final Paint paddingPaint = Paint()
+      ..color = color.withValues(alpha: 0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
 
-    // Draw horizontal lines
-    final cellHeight = destRect.height / rows;
-    for (int i = 0; i <= rows; i++) {
-      final y = destRect.top + i * cellHeight;
-      canvas.drawLine(
-        Offset(destRect.left, y),
-        Offset(destRect.right, y),
-        paint,
-      );
-    }
+    // Calculate effective area dimensions
+    final double effectiveWidth = imageSize.width - marginLeft - marginRight;
+    final double effectiveHeight = imageSize.height - marginTop - marginBottom;
+
+    // Calculate total spacing
+    final double totalSpacingX = (columns - 1) * cellSpacingX;
+    final double totalSpacingY = (rows - 1) * cellSpacingY;
+
+    // Available space for cells
+    final double availableWidthForCells = effectiveWidth - totalSpacingX;
+    final double availableHeightForCells = effectiveHeight - totalSpacingY;
+
+    final double cellWidth = availableWidthForCells / columns;
+    final double cellHeight = availableHeightForCells / rows;
+
+    // Draw Margin Box (Outer boundary of value)
+    // final marginRect = Rect.fromLTWH(
+    //   destRect.left + s(marginLeft),
+    //   destRect.top + s(marginTop),
+    //   s(effectiveWidth),
+    //   s(effectiveHeight),
+    // );
+    // Optional: Draw margin boundary
+    // canvas.drawRect(marginRect, paint..color = color.withOpacity(0.5));
 
     // Draw center dots (visual feedback for sampling point)
     final dotPaint = Paint()
-      ..color = color.withValues(alpha: 0.5)
+      ..color = color.withValues(alpha: 0.8)
       ..style = PaintingStyle.fill;
 
-    for (int i = 0; i < rows; i++) {
-      for (int j = 0; j < columns; j++) {
-        final cx = destRect.left + (j * cellWidth) + (cellWidth / 2);
-        final cy = destRect.top + (i * cellHeight) + (cellHeight / 2);
-        canvas.drawCircle(Offset(cx, cy), 2, dotPaint);
+    for (int y = 0; y < rows; y++) {
+      for (int x = 0; x < columns; x++) {
+        // Calculate cell origin in image space
+        final double cellImgLeft =
+            marginLeft + offsetX + (x * (cellWidth + cellSpacingX));
+        final double cellImgTop =
+            marginTop + offsetY + (y * (cellHeight + cellSpacingY));
+
+        // Convert to screen space
+        final double screenLeft = destRect.left + s(cellImgLeft);
+        final double screenTop = destRect.top + s(cellImgTop);
+        final double screenWidth = s(cellWidth);
+        final double screenHeight = s(cellHeight);
+
+        final cellRect = Rect.fromLTWH(
+          screenLeft,
+          screenTop,
+          screenWidth,
+          screenHeight,
+        );
+
+        // Draw Cell Boundary
+        canvas.drawRect(cellRect, paint);
+
+        // Draw Padding Box (Sampling Area)
+        if (paddingX > 0 || paddingY > 0) {
+          final double paddingImgLeft = paddingX;
+          final double paddingImgTop = paddingY;
+          final double paddingImgWidth = cellWidth - (paddingX * 2);
+          final double paddingImgHeight = cellHeight - (paddingY * 2);
+
+          final paddingRect = Rect.fromLTWH(
+            screenLeft + s(paddingImgLeft),
+            screenTop + s(paddingImgTop),
+            s(paddingImgWidth),
+            s(paddingImgHeight),
+          );
+          canvas.drawRect(paddingRect, paddingPaint);
+
+          // Center dot
+          final cx = paddingRect.center.dx;
+          final cy = paddingRect.center.dy;
+          canvas.drawCircle(Offset(cx, cy), 3, dotPaint);
+        } else {
+          // Center dot
+          final cx = cellRect.center.dx;
+          final cy = cellRect.center.dy;
+          canvas.drawCircle(Offset(cx, cy), 3, dotPaint);
+        }
       }
     }
   }
@@ -507,6 +809,16 @@ class _GridPainter extends CustomPainter {
     return oldDelegate.rows != rows ||
         oldDelegate.columns != columns ||
         oldDelegate.color != color ||
-        oldDelegate.imageSize != imageSize;
+        oldDelegate.imageSize != imageSize ||
+        oldDelegate.offsetX != offsetX ||
+        oldDelegate.offsetY != offsetY ||
+        oldDelegate.marginTop != marginTop ||
+        oldDelegate.marginRight != marginRight ||
+        oldDelegate.marginBottom != marginBottom ||
+        oldDelegate.marginLeft != marginLeft ||
+        oldDelegate.paddingX != paddingX ||
+        oldDelegate.paddingY != paddingY ||
+        oldDelegate.cellSpacingX != cellSpacingX ||
+        oldDelegate.cellSpacingY != cellSpacingY;
   }
 }
