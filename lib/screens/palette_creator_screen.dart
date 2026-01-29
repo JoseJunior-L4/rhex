@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:remixicon/remixicon.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../components/app_bar_component.dart';
 import '../../components/color_grid_component.dart';
@@ -107,6 +108,13 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
   void _updateColor(int index, Color color) {
     setState(() {
       _paletteModel.updateColor(index, color);
+    });
+    _persistState();
+  }
+
+  void _deleteColor(int index) {
+    setState(() {
+      _paletteModel.removeColorAt(index);
     });
     _persistState();
   }
@@ -335,55 +343,207 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
   }
 
   Future<void> _export() async {
-    try {
-      if (_paletteModel.colors.isEmpty) {
-        if (mounted) {
-          ShadToaster.of(
-            context,
-          ).show(const ShadToast(description: Text('No colors to export!')));
-        }
-        return;
+    if (_paletteModel.colors.isEmpty) {
+      if (mounted) {
+        ShadToaster.of(
+          context,
+        ).show(const ShadToast(description: Text('No colors to export!')));
       }
+      return;
+    }
 
-      // Capture the widget as an image
-      RenderRepaintBoundary boundary =
-          _gridKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-      ByteData? byteData = await image.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
-      Uint8List pngBytes = byteData!.buffer.asUint8List();
-
-      // Save the image
-      String? outputFile = await FilePicker.platform.saveFile(
-        dialogTitle: 'Export Palette as PNG',
-        fileName: 'palette.png',
-        type: FileType.custom,
-        allowedExtensions: ['png'],
-      );
-
-      if (outputFile != null) {
-        // Ensure extension
-        if (!outputFile.endsWith('.png')) {
-          outputFile += '.png';
-        }
-
-        final file = File(outputFile);
-        await file.writeAsBytes(pngBytes);
-
-        if (mounted) {
-          ShadToaster.of(context).show(
-            const ShadToast(
-              description: Text('Palette exported successfully!'),
+    // Show format selection dialog
+    final format = await showDialog<String>(
+      context: context,
+      builder: (context) => ShadDialog(
+        title: Text(AppLocalizations.of(context)!.dialogExportTitle),
+        description: Text(AppLocalizations.of(context)!.dialogExportDescription),
+        actions: [
+          ShadButton.outline(
+            child: Text(AppLocalizations.of(context)!.actionCancel),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ExportOption(
+              icon: Remix.image_line,
+              title: 'PNG Image',
+              description: 'High-quality image of your palette grid',
+              onTap: () => Navigator.of(context).pop('png'),
             ),
-          );
-        }
+            const SizedBox(height: 8),
+            _ExportOption(
+              icon: Remix.code_s_slash_line,
+              title: 'CSS Variables',
+              description: 'CSS custom properties (--color-1, --color-2, ...)',
+              onTap: () => Navigator.of(context).pop('css'),
+            ),
+            const SizedBox(height: 8),
+            _ExportOption(
+              icon: Remix.tailwind_css_fill,
+              title: 'Tailwind Config',
+              description: 'Colors object for tailwind.config.js',
+              onTap: () => Navigator.of(context).pop('tailwind'),
+            ),
+            const SizedBox(height: 8),
+            _ExportOption(
+              icon: Remix.file_text_line,
+              title: 'Hex List',
+              description: 'Plain text list of hex codes (one per line)',
+              onTap: () => Navigator.of(context).pop('text'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (format == null) return;
+
+    try {
+      switch (format) {
+        case 'png':
+          await _exportAsPng();
+          break;
+        case 'css':
+          await _exportAsCss();
+          break;
+        case 'tailwind':
+          await _exportAsTailwind();
+          break;
+        case 'text':
+          await _exportAsText();
+          break;
       }
     } catch (e) {
       if (mounted) {
         ShadToaster.of(
           context,
         ).show(ShadToast(description: Text('Error exporting palette: $e')));
+      }
+    }
+  }
+
+  Future<void> _exportAsPng() async {
+    RenderRepaintBoundary boundary =
+        _gridKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+    ByteData? byteData = await image.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
+    Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+    String? outputFile = await FilePicker.platform.saveFile(
+      dialogTitle: 'Export Palette as PNG',
+      fileName: 'palette.png',
+      type: FileType.custom,
+      allowedExtensions: ['png'],
+    );
+
+    if (outputFile != null) {
+      if (!outputFile.endsWith('.png')) {
+        outputFile += '.png';
+      }
+      final file = File(outputFile);
+      await file.writeAsBytes(pngBytes);
+      if (mounted) {
+        ShadToaster.of(context).show(
+          const ShadToast(description: Text('Palette exported as PNG!')),
+        );
+      }
+    }
+  }
+
+  String _colorToHex(Color color) {
+    return '#${(color.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+  }
+
+  Future<void> _exportAsCss() async {
+    final buffer = StringBuffer();
+    buffer.writeln(':root {');
+    for (int i = 0; i < _paletteModel.colors.length; i++) {
+      final hex = _colorToHex(_paletteModel.colors[i]);
+      buffer.writeln('  --color-${i + 1}: $hex;');
+    }
+    buffer.writeln('}');
+
+    String? outputFile = await FilePicker.platform.saveFile(
+      dialogTitle: 'Export Palette as CSS',
+      fileName: 'palette.css',
+      type: FileType.custom,
+      allowedExtensions: ['css'],
+    );
+
+    if (outputFile != null) {
+      if (!outputFile.endsWith('.css')) {
+        outputFile += '.css';
+      }
+      final file = File(outputFile);
+      await file.writeAsString(buffer.toString());
+      if (mounted) {
+        ShadToaster.of(context).show(
+          const ShadToast(description: Text('Palette exported as CSS!')),
+        );
+      }
+    }
+  }
+
+  Future<void> _exportAsTailwind() async {
+    final buffer = StringBuffer();
+    buffer.writeln('// Add to your tailwind.config.js theme.extend.colors');
+    buffer.writeln('const palette = {');
+    for (int i = 0; i < _paletteModel.colors.length; i++) {
+      final hex = _colorToHex(_paletteModel.colors[i]);
+      final comma = i < _paletteModel.colors.length - 1 ? ',' : '';
+      buffer.writeln("  'color-${i + 1}': '$hex'$comma");
+    }
+    buffer.writeln('};');
+
+    String? outputFile = await FilePicker.platform.saveFile(
+      dialogTitle: 'Export Palette as Tailwind Config',
+      fileName: 'palette-tailwind.js',
+      type: FileType.custom,
+      allowedExtensions: ['js'],
+    );
+
+    if (outputFile != null) {
+      if (!outputFile.endsWith('.js')) {
+        outputFile += '.js';
+      }
+      final file = File(outputFile);
+      await file.writeAsString(buffer.toString());
+      if (mounted) {
+        ShadToaster.of(context).show(
+          const ShadToast(description: Text('Palette exported as Tailwind config!')),
+        );
+      }
+    }
+  }
+
+  Future<void> _exportAsText() async {
+    final buffer = StringBuffer();
+    for (final color in _paletteModel.colors) {
+      buffer.writeln(_colorToHex(color));
+    }
+
+    String? outputFile = await FilePicker.platform.saveFile(
+      dialogTitle: 'Export Palette as Text',
+      fileName: 'palette.txt',
+      type: FileType.custom,
+      allowedExtensions: ['txt'],
+    );
+
+    if (outputFile != null) {
+      if (!outputFile.endsWith('.txt')) {
+        outputFile += '.txt';
+      }
+      final file = File(outputFile);
+      await file.writeAsString(buffer.toString());
+      if (mounted) {
+        ShadToaster.of(context).show(
+          const ShadToast(description: Text('Palette exported as text!')),
+        );
       }
     }
   }
@@ -395,41 +555,46 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
     });
     _persistState();
 
+    Color pickerColor = _paletteModel.colors[index];
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        Color pickerColor = _paletteModel.colors[index];
-
-        return AlertDialog(
-          title: const Text('Edit Color'),
-          content: SingleChildScrollView(
-            child: ColorPicker(
-              pickerColor: pickerColor,
-              onColorChanged: (Color color) {
-                pickerColor = color;
-              },
-              pickerAreaHeightPercent: 0.8,
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            ShadButton(
-              child: const Text('Update'),
-              onPressed: () {
-                _updateColor(index, pickerColor);
-                setState(() {
-                  _currentInputColor = pickerColor;
-                });
-                _persistState();
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return ShadDialog(
+              title: Text(AppLocalizations.of(context)!.dialogEditColorTitle),
+              description: Text(AppLocalizations.of(context)!.dialogEditColorDescription),
+              actions: [
+                ShadButton.outline(
+                  child: Text(AppLocalizations.of(context)!.actionCancel),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                ShadButton(
+                  child: Text(AppLocalizations.of(context)!.actionUpdate),
+                  onPressed: () {
+                    _updateColor(index, pickerColor);
+                    setState(() {
+                      _currentInputColor = pickerColor;
+                    });
+                    _persistState();
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+              child: SingleChildScrollView(
+                child: ColorPicker(
+                  pickerColor: pickerColor,
+                  onColorChanged: (Color color) {
+                    setDialogState(() {
+                      pickerColor = color;
+                    });
+                  },
+                  pickerAreaHeightPercent: 0.8,
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -565,6 +730,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
                                 _editColor(index);
                               },
                               onColorRightClick: _showShadeGenerator,
+                              onColorDelete: _deleteColor,
                               onReorder: _reorderColor,
                               showHexLabels: _showHexLabels,
                             ),
@@ -642,4 +808,52 @@ class _ExportIntent extends Intent {
 
 class _HelpIntent extends Intent {
   const _HelpIntent();
+}
+
+class _ExportOption extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+
+  const _ExportOption({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border.all(color: ShadTheme.of(context).colorScheme.border),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: ShadTheme.of(context).textTheme.p.copyWith(fontWeight: FontWeight.w600)),
+                    Text(description, style: ShadTheme.of(context).textTheme.muted),
+                  ],
+                ),
+              ),
+              Icon(Remix.arrow_right_s_line, color: ShadTheme.of(context).colorScheme.mutedForeground),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -35,6 +35,7 @@
   "toastErrorExporting": "Erro ao exportar paleta: {error}",
 
   "dialogEditColorTitle": "Editar Cor",
+  "dialogEditColorDescription": "Escolha uma nova cor para este espaço da paleta",
   "dialogShadeGeneratorTitle": "Gerador de Sombras",
   "labelBaseColor": "Cor Base",
   "labelTints": "Tons Claros",
@@ -111,5 +112,8 @@
   "labelRows": "Linhas",
   "labelColumns": "Colunas",
   "labelGridVisibility": "Visibilidade da Grade",
-  "labelExtractedColors": "Cores Extraídas"
+  "labelExtractedColors": "Cores Extraídas",
+
+  "dialogExportTitle": "Exportar Paleta",
+  "dialogExportDescription": "Escolha um formato de exportação"
 }

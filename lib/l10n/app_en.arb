@@ -35,6 +35,7 @@
   "toastErrorExporting": "Error exporting palette: {error}",
 
   "dialogEditColorTitle": "Edit Color",
+  "dialogEditColorDescription": "Choose a new color for this palette slot",
   "dialogShadeGeneratorTitle": "Shade Generator",
   "labelBaseColor": "Base Color",
   "labelTints": "Tints",
@@ -111,5 +112,8 @@
   "labelRows": "Rows",
   "labelColumns": "Columns",
   "labelGridVisibility": "Grid Visibility",
-  "labelExtractedColors": "Extracted Colors"
+  "labelExtractedColors": "Extracted Colors",
+
+  "dialogExportTitle": "Export Palette",
+  "dialogExportDescription": "Choose an export format"
 }

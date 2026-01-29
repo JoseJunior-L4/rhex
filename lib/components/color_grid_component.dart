@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
@@ -8,6 +9,7 @@ class ColorGridComponent extends StatelessWidget {
   final int gridSize;
   final Function(int) onColorTap;
   final Function(int)? onColorRightClick;
+  final Function(int)? onColorDelete;
   final Function(int, int) onReorder;
   final bool showHexLabels;
   final ScrollController? scrollController;
@@ -19,6 +21,7 @@ class ColorGridComponent extends StatelessWidget {
     required this.gridSize,
     required this.onColorTap,
     this.onColorRightClick,
+    this.onColorDelete,
     required this.onReorder,
     this.showHexLabels = true,
     this.scrollController,
@@ -77,6 +80,9 @@ class ColorGridComponent extends StatelessWidget {
                 onRightClick: onColorRightClick != null
                     ? () => onColorRightClick!(index)
                     : null,
+                onDelete: onColorDelete != null
+                    ? () => onColorDelete!(index)
+                    : null,
                 showHexLabels: showHexLabels,
               );
             },
@@ -92,6 +98,7 @@ class ColorTile extends StatefulWidget {
   final String hexCode;
   final VoidCallback onTap;
   final VoidCallback? onRightClick;
+  final VoidCallback? onDelete;
   final bool showHexLabels;
 
   const ColorTile({
@@ -100,6 +107,7 @@ class ColorTile extends StatefulWidget {
     required this.hexCode,
     required this.onTap,
     this.onRightClick,
+    this.onDelete,
     required this.showHexLabels,
   });
 
@@ -141,7 +149,7 @@ class _ColorTileState extends State<ColorTile> {
           ),
           child: Stack(
             children: [
-              // Hex code overlay (bottom-left)
+              // Hex code overlay (bottom-left) - click to copy
               if (widget.showHexLabels)
                 Positioned(
                   left: 8,
@@ -152,36 +160,84 @@ class _ColorTileState extends State<ColorTile> {
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getContrastColor(
-                            widget.color,
-                          ).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: _getContrastColor(
-                              widget.color,
-                            ).withValues(alpha: 0.2),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          widget.hexCode,
-                          style: ShadTheme.of(context).textTheme.small.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: _getContrastColor(widget.color),
-                            letterSpacing: 0.5,
+                      child: GestureDetector(
+                        onTap: () {
+                          Clipboard.setData(ClipboardData(text: widget.hexCode));
+                          ShadToaster.of(context).show(
+                            ShadToast(
+                              description: Text('Copied ${widget.hexCode}'),
+                            ),
+                          );
+                        },
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.copy,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _getContrastColor(
+                                widget.color,
+                              ).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: _getContrastColor(
+                                  widget.color,
+                                ).withValues(alpha: 0.2),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  widget.hexCode,
+                                  style: ShadTheme.of(context).textTheme.small.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: _getContrastColor(widget.color),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Remix.file_copy_line,
+                                  size: 12,
+                                  color: _getContrastColor(widget.color).withValues(alpha: 0.7),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              // Hover indicator
+              // Delete button (top-right) - only on hover
+              if (_isHovered && widget.onDelete != null)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: widget.onDelete,
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: _getContrastColor(widget.color).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          Remix.delete_bin_line,
+                          color: _getContrastColor(widget.color),
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              // Hover indicator (center edit icon)
               if (_isHovered)
                 Center(
                   child: Container(

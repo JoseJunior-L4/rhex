@@ -290,6 +290,12 @@ abstract class AppLocalizations {
   /// **'Edit Color'**
   String get dialogEditColorTitle;
 
+  /// No description provided for @dialogEditColorDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a new color for this palette slot'**
+  String get dialogEditColorDescription;
+
   /// No description provided for @dialogShadeGeneratorTitle.
   ///
   /// In en, this message translates to:
@@ -691,6 +697,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Extracted Colors'**
   String get labelExtractedColors;
+
+  /// No description provided for @dialogExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Palette'**
+  String get dialogExportTitle;
+
+  /// No description provided for @dialogExportDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an export format'**
+  String get dialogExportDescription;
 }
 
 class _AppLocalizationsDelegate

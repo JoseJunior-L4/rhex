@@ -114,6 +114,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dialogEditColorTitle => 'Editar Cor';
 
   @override
+  String get dialogEditColorDescription =>
+      'Escolha uma nova cor para este espaço da paleta';
+
+  @override
   String get dialogShadeGeneratorTitle => 'Gerador de Sombras';
 
   @override
@@ -334,4 +338,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get labelExtractedColors => 'Cores Extraídas';
+
+  @override
+  String get dialogExportTitle => 'Exportar Paleta';
+
+  @override
+  String get dialogExportDescription => 'Escolha um formato de exportação';
 }

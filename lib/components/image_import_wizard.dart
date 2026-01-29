@@ -173,6 +173,9 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 900;
+
     return Dialog(
       backgroundColor: ShadTheme.of(context).colorScheme.background,
       shape: RoundedRectangleBorder(
@@ -180,9 +183,9 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
         side: BorderSide(color: ShadTheme.of(context).colorScheme.border),
       ),
       child: Container(
-        width: 1200,
-        height: 800,
-        padding: const EdgeInsets.all(24),
+        width: isSmallScreen ? screenSize.width * 0.95 : (screenSize.width * 0.9).clamp(600.0, 1200.0),
+        height: isSmallScreen ? screenSize.height * 0.9 : (screenSize.height * 0.9).clamp(400.0, 800.0),
+        padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -216,101 +219,207 @@ class _ImageImportWizardState extends State<ImageImportWizard> {
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Left Panel: Image + Overlay
-                        Expanded(
-                          flex: 3,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: ShadTheme.of(context).colorScheme.muted,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: ShadTheme.of(context).colorScheme.border,
-                              ),
-                            ),
-                            child: ClipRect(
-                              child: InteractiveViewer(
-                                minScale: 0.1,
-                                maxScale: 5.0,
-                                child: Center(
-                                  child: LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      if (_uiImage == null) {
-                                        return const SizedBox();
-                                      }
-
-                                      // Calculate fitted dimensions to match standard BoxFit.contain logic
-                                      // so we can draw the grid accurately over it.
-                                      final imgSize = Size(
-                                        _uiImage!.width.toDouble(),
-                                        _uiImage!.height.toDouble(),
-                                      );
-
-                                      return CustomPaint(
-                                        foregroundPainter: _GridPainter(
-                                          rows: _rows,
-                                          columns: _columns,
-                                          color: _gridColor,
-                                          imageSize: imgSize,
-                                          offsetX: _offsetX,
-                                          offsetY: _offsetY,
-                                          marginTop: _marginTop,
-                                          marginRight: _marginRight,
-                                          marginBottom: _marginBottom,
-                                          marginLeft: _marginLeft,
-                                          paddingX: _paddingX,
-                                          paddingY: _paddingY,
-                                          cellSpacingX: _cellSpacingX,
-                                          cellSpacingY: _cellSpacingY,
-                                        ),
-                                        child: RawImage(
-                                          image: _uiImage,
-                                          fit: BoxFit.contain,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 24),
-
-                        // Right Panel: Settings
-                        Expanded(
-                          flex: 1,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildGridSettings(context),
-                              const SizedBox(height: 24),
-                              _buildPreview(context),
-                              const Spacer(),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ShadButton(
-                                  child: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    )!.actionImportColors,
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(context).pop(_extractedColors);
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                  : isSmallScreen
+                      ? _buildVerticalLayout(context)
+                      : _buildHorizontalLayout(context),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildHorizontalLayout(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left Panel: Image + Overlay
+        Expanded(
+          flex: 3,
+          child: _buildImagePanel(context),
+        ),
+        const SizedBox(width: 24),
+        // Right Panel: Settings
+        Expanded(
+          flex: 1,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildGridSettings(context),
+              const SizedBox(height: 24),
+              _buildPreview(context),
+              const Spacer(),
+              _buildImportButton(context),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVerticalLayout(BuildContext context) {
+    return Column(
+      children: [
+        // Image Panel (takes available space)
+        Expanded(
+          flex: 2,
+          child: _buildImagePanel(context),
+        ),
+        const SizedBox(height: 16),
+        // Settings and Preview (scrollable on small screens)
+        Expanded(
+          flex: 1,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildCompactGridSettings(context),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 100,
+                  child: _buildPreviewGrid(context),
+                ),
+                const SizedBox(height: 16),
+                _buildImportButton(context),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImagePanel(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: ShadTheme.of(context).colorScheme.muted,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: ShadTheme.of(context).colorScheme.border,
+        ),
+      ),
+      child: ClipRect(
+        child: InteractiveViewer(
+          minScale: 0.1,
+          maxScale: 5.0,
+          child: Center(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                if (_uiImage == null) {
+                  return const SizedBox();
+                }
+
+                final imgSize = Size(
+                  _uiImage!.width.toDouble(),
+                  _uiImage!.height.toDouble(),
+                );
+
+                return CustomPaint(
+                  foregroundPainter: _GridPainter(
+                    rows: _rows,
+                    columns: _columns,
+                    color: _gridColor,
+                    imageSize: imgSize,
+                    offsetX: _offsetX,
+                    offsetY: _offsetY,
+                    marginTop: _marginTop,
+                    marginRight: _marginRight,
+                    marginBottom: _marginBottom,
+                    marginLeft: _marginLeft,
+                    paddingX: _paddingX,
+                    paddingY: _paddingY,
+                    cellSpacingX: _cellSpacingX,
+                    cellSpacingY: _cellSpacingY,
+                  ),
+                  child: RawImage(
+                    image: _uiImage,
+                    fit: BoxFit.contain,
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImportButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ShadButton(
+        child: Text(
+          AppLocalizations.of(context)!.actionImportColors,
+        ),
+        onPressed: () {
+          Navigator.of(context).pop(_extractedColors);
+        },
+      ),
+    );
+  }
+
+  Widget _buildCompactGridSettings(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(AppLocalizations.of(context)!.labelRows, style: ShadTheme.of(context).textTheme.small),
+              ShadSlider(
+                initialValue: _rows.toDouble(),
+                min: 1,
+                max: 50,
+                onChanged: (val) {
+                  setState(() => _rows = val.toInt());
+                  _extractColors();
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(AppLocalizations.of(context)!.labelColumns, style: ShadTheme.of(context).textTheme.small),
+              ShadSlider(
+                initialValue: _columns.toDouble(),
+                min: 1,
+                max: 50,
+                onChanged: (val) {
+                  setState(() => _columns = val.toInt());
+                  _extractColors();
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPreviewGrid(BuildContext context) {
+    return GridView.builder(
+      scrollDirection: Axis.horizontal,
+      itemCount: _extractedColors.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 4,
+        mainAxisSpacing: 4,
+      ),
+      itemBuilder: (context, index) {
+        return Container(
+          decoration: BoxDecoration(
+            color: _extractedColors[index],
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: ShadTheme.of(context).colorScheme.border,
+            ),
+          ),
+        );
+      },
     );
   }
 

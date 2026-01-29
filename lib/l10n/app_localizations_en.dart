@@ -114,6 +114,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dialogEditColorTitle => 'Edit Color';
 
   @override
+  String get dialogEditColorDescription =>
+      'Choose a new color for this palette slot';
+
+  @override
   String get dialogShadeGeneratorTitle => 'Shade Generator';
 
   @override
@@ -332,4 +336,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelExtractedColors => 'Extracted Colors';
+
+  @override
+  String get dialogExportTitle => 'Export Palette';
+
+  @override
+  String get dialogExportDescription => 'Choose an export format';
 }
