@@ -39,7 +39,7 @@ class PaletteCreatorScreen extends StatefulWidget {
 
 class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
   final ColorPaletteModel _paletteModel = ColorPaletteModel(
-    colors: [], // Start with empty palette
+    items: [], // Start with empty palette
   );
   final StorageService _storageService = StorageService();
 
@@ -61,7 +61,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
     final state = await _storageService.loadPaletteState();
     if (mounted) {
       setState(() {
-        _paletteModel.colors = state['colors'];
+        _paletteModel.loadColors(state['colors']);
         _gridSize = state['gridSize'];
         _showHexLabels = state['showHexLabels'];
         if (state['currentColor'] != null) {
@@ -81,11 +81,11 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
 
   void _persistState() {
     _storageService.savePaletteState(
-      colors: _paletteModel.colors,
+      items: _paletteModel.items,
       gridSize: _gridSize,
       showHexLabels: _showHexLabels,
       currentColor: _currentInputColor,
-      history: _paletteModel.getHistory(),
+      history: _paletteModel.getHistoryColors(),
       historyIndex: _paletteModel.getHistoryIndex(),
       sidebarCollapsed: _isSidebarCollapsed,
     );
@@ -134,6 +134,9 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
 
   void _reorderColor(int oldIndex, int newIndex) {
     setState(() {
+      if (oldIndex < newIndex) {
+        newIndex -= 1;
+      }
       _paletteModel.reorderColor(oldIndex, newIndex);
     });
     _persistState();
@@ -357,7 +360,9 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
       context: context,
       builder: (context) => ShadDialog(
         title: Text(AppLocalizations.of(context)!.dialogExportTitle),
-        description: Text(AppLocalizations.of(context)!.dialogExportDescription),
+        description: Text(
+          AppLocalizations.of(context)!.dialogExportDescription,
+        ),
         actions: [
           ShadButton.outline(
             child: Text(AppLocalizations.of(context)!.actionCancel),
@@ -429,9 +434,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
     RenderRepaintBoundary boundary =
         _gridKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
     ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-    ByteData? byteData = await image.toByteData(
-      format: ui.ImageByteFormat.png,
-    );
+    ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     Uint8List pngBytes = byteData!.buffer.asUint8List();
 
     String? outputFile = await FilePicker.platform.saveFile(
@@ -448,9 +451,9 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
       final file = File(outputFile);
       await file.writeAsBytes(pngBytes);
       if (mounted) {
-        ShadToaster.of(context).show(
-          const ShadToast(description: Text('Palette exported as PNG!')),
-        );
+        ShadToaster.of(
+          context,
+        ).show(const ShadToast(description: Text('Palette exported as PNG!')));
       }
     }
   }
@@ -482,9 +485,9 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
       final file = File(outputFile);
       await file.writeAsString(buffer.toString());
       if (mounted) {
-        ShadToaster.of(context).show(
-          const ShadToast(description: Text('Palette exported as CSS!')),
-        );
+        ShadToaster.of(
+          context,
+        ).show(const ShadToast(description: Text('Palette exported as CSS!')));
       }
     }
   }
@@ -515,7 +518,9 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
       await file.writeAsString(buffer.toString());
       if (mounted) {
         ShadToaster.of(context).show(
-          const ShadToast(description: Text('Palette exported as Tailwind config!')),
+          const ShadToast(
+            description: Text('Palette exported as Tailwind config!'),
+          ),
         );
       }
     }
@@ -541,9 +546,9 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
       final file = File(outputFile);
       await file.writeAsString(buffer.toString());
       if (mounted) {
-        ShadToaster.of(context).show(
-          const ShadToast(description: Text('Palette exported as text!')),
-        );
+        ShadToaster.of(
+          context,
+        ).show(const ShadToast(description: Text('Palette exported as text!')));
       }
     }
   }
@@ -564,7 +569,9 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
           builder: (context, setDialogState) {
             return ShadDialog(
               title: Text(AppLocalizations.of(context)!.dialogEditColorTitle),
-              description: Text(AppLocalizations.of(context)!.dialogEditColorDescription),
+              description: Text(
+                AppLocalizations.of(context)!.dialogEditColorDescription,
+              ),
               actions: [
                 ShadButton.outline(
                   child: Text(AppLocalizations.of(context)!.actionCancel),
@@ -724,7 +731,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
                             child: ColorGridComponent(
                               scrollController: _mainGridScrollController,
                               globalKey: _gridKey,
-                              colors: _paletteModel.colors,
+                              items: _paletteModel.items,
                               gridSize: _gridSize,
                               onColorTap: (index) {
                                 _editColor(index);
@@ -752,7 +759,7 @@ class _PaletteCreatorScreenState extends State<PaletteCreatorScreen> {
                               shouldAutoCollapse
                           ? const SizedBox.shrink()
                           : SidebarComponent(
-                              colors: _paletteModel.colors,
+                              items: _paletteModel.items,
                               gridSize: _gridSize,
                               onAddColor: _addColor,
                               onColorUpdate: _updateColor,
@@ -844,12 +851,23 @@ class _ExportOption extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: ShadTheme.of(context).textTheme.p.copyWith(fontWeight: FontWeight.w600)),
-                    Text(description, style: ShadTheme.of(context).textTheme.muted),
+                    Text(
+                      title,
+                      style: ShadTheme.of(
+                        context,
+                      ).textTheme.p.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      description,
+                      style: ShadTheme.of(context).textTheme.muted,
+                    ),
                   ],
                 ),
               ),
-              Icon(Remix.arrow_right_s_line, color: ShadTheme.of(context).colorScheme.mutedForeground),
+              Icon(
+                Remix.arrow_right_s_line,
+                color: ShadTheme.of(context).colorScheme.mutedForeground,
+              ),
             ],
           ),
         ),

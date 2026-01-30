@@ -5,9 +5,10 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:rhex/l10n/app_localizations.dart';
+import '../models/color_palette_model.dart';
 
 class SidebarComponent extends StatefulWidget {
-  final List<Color> colors;
+  final List<PaletteItem> items;
   final int gridSize;
   final Function(Color) onAddColor;
   final Function(int, Color) onColorUpdate;
@@ -19,7 +20,7 @@ class SidebarComponent extends StatefulWidget {
 
   const SidebarComponent({
     super.key,
-    required this.colors,
+    required this.items,
     required this.gridSize,
     required this.onAddColor,
     required this.onColorUpdate,
@@ -377,7 +378,7 @@ class _SidebarComponentState extends State<SidebarComponent> {
                       ),
                     ),
                     // History Scroll Controls
-                    if (widget.colors.isNotEmpty)
+                    if (widget.items.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(left: 20.0),
                         child: Row(
@@ -417,7 +418,7 @@ class _SidebarComponentState extends State<SidebarComponent> {
                 ),
                 const SizedBox(height: 12),
                 // Show empty state or horizontal scrollable history
-                widget.colors.isEmpty
+                widget.items.isEmpty
                     ? Container(
                         padding: const EdgeInsets.symmetric(vertical: 24),
                         child: Center(
@@ -434,11 +435,11 @@ class _SidebarComponentState extends State<SidebarComponent> {
                           controller: _historyScrollController,
                           scrollDirection: Axis.horizontal,
                           child: Row(
-                            children: widget.colors.reversed.map((color) {
+                            children: widget.items.reversed.map((item) {
                               return _ColorHistoryItem(
-                                color: color,
+                                color: item.color,
                                 onTap: () {
-                                  _updateCurrentColor(color);
+                                  _updateCurrentColor(item.color);
                                 },
                               );
                             }).toList(),

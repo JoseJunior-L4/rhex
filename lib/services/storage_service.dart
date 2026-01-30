@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/color_palette_model.dart';
 
 class StorageService {
   static const String _keyColors = 'rhex_colors';
@@ -13,7 +14,7 @@ class StorageService {
   static const String _keyThemeMode = 'rhex_theme_mode';
 
   Future<void> savePaletteState({
-    required List<Color> colors,
+    required List<PaletteItem> items,
     required int gridSize,
     required bool showHexLabels,
     required Color currentColor,
@@ -23,7 +24,7 @@ class StorageService {
   }) async {
     final prefs = await SharedPreferences.getInstance();
     // Use toARGB32() as .value is deprecated
-    final colorValues = colors.map((c) => c.toARGB32()).toList();
+    final colorValues = items.map((i) => i.color.toARGB32()).toList();
 
     // Serialize history - list of lists of color values
     final historyValues = history

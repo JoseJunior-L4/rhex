@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
+import '../models/color_palette_model.dart';
 
 class ColorGridComponent extends StatelessWidget {
-  final List<Color> colors;
+  final List<PaletteItem> items;
   final int gridSize;
   final Function(int) onColorTap;
   final Function(int)? onColorRightClick;
@@ -17,7 +18,7 @@ class ColorGridComponent extends StatelessWidget {
 
   const ColorGridComponent({
     super.key,
-    required this.colors,
+    required this.items,
     required this.gridSize,
     required this.onColorTap,
     this.onColorRightClick,
@@ -35,7 +36,7 @@ class ColorGridComponent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Show empty state message when no colors
-    if (colors.isEmpty) {
+    if (items.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -69,21 +70,25 @@ class ColorGridComponent extends StatelessWidget {
               crossAxisSpacing: 0,
               mainAxisSpacing: 0,
             ),
-            itemCount: colors.length,
+            itemCount: items.length,
             onReorder: onReorder,
             itemBuilder: (context, index) {
-              return ColorTile(
-                key: ValueKey('color_${colors[index].toARGB32()}_$index'),
-                color: colors[index],
-                hexCode: _getHexColor(colors[index]),
-                onTap: () => onColorTap(index),
-                onRightClick: onColorRightClick != null
-                    ? () => onColorRightClick!(index)
-                    : null,
-                onDelete: onColorDelete != null
-                    ? () => onColorDelete!(index)
-                    : null,
-                showHexLabels: showHexLabels,
+              final item = items[index];
+              return ReorderableDragStartListener(
+                key: ValueKey(item.id),
+                index: index,
+                child: ColorTile(
+                  color: item.color,
+                  hexCode: _getHexColor(item.color),
+                  onTap: () => onColorTap(index),
+                  onRightClick: onColorRightClick != null
+                      ? () => onColorRightClick!(index)
+                      : null,
+                  onDelete: onColorDelete != null
+                      ? () => onColorDelete!(index)
+                      : null,
+                  showHexLabels: showHexLabels,
+                ),
               );
             },
           ),
@@ -162,7 +167,9 @@ class _ColorTileState extends State<ColorTile> {
                       alignment: Alignment.centerLeft,
                       child: GestureDetector(
                         onTap: () {
-                          Clipboard.setData(ClipboardData(text: widget.hexCode));
+                          Clipboard.setData(
+                            ClipboardData(text: widget.hexCode),
+                          );
                           ShadToaster.of(context).show(
                             ShadToast(
                               description: Text('Copied ${widget.hexCode}'),
@@ -193,17 +200,20 @@ class _ColorTileState extends State<ColorTile> {
                               children: [
                                 Text(
                                   widget.hexCode,
-                                  style: ShadTheme.of(context).textTheme.small.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: _getContrastColor(widget.color),
-                                    letterSpacing: 0.5,
-                                  ),
+                                  style: ShadTheme.of(context).textTheme.small
+                                      .copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: _getContrastColor(widget.color),
+                                        letterSpacing: 0.5,
+                                      ),
                                 ),
                                 const SizedBox(width: 4),
                                 Icon(
                                   Remix.file_copy_line,
                                   size: 12,
-                                  color: _getContrastColor(widget.color).withValues(alpha: 0.7),
+                                  color: _getContrastColor(
+                                    widget.color,
+                                  ).withValues(alpha: 0.7),
                                 ),
                               ],
                             ),
@@ -225,7 +235,9 @@ class _ColorTileState extends State<ColorTile> {
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: _getContrastColor(widget.color).withValues(alpha: 0.15),
+                          color: _getContrastColor(
+                            widget.color,
+                          ).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Icon(
