@@ -296,11 +296,14 @@ class _SidebarComponentState extends State<SidebarComponent> {
                         controller: _hexController,
                         placeholder: const Text('#000000'),
                         onChanged: (value) {
-                          if (value.length == 7 && value.startsWith('#')) {
+                          String cleanHex = value
+                              .replaceAll('#', '')
+                              .trim()
+                              .toUpperCase();
+                          if (cleanHex.length == 6) {
                             try {
                               final color = Color(
-                                int.parse(value.substring(1), radix: 16) +
-                                    0xFF000000,
+                                int.parse(cleanHex, radix: 16) + 0xFF000000,
                               );
                               _updateCurrentColor(color);
                             } catch (e) {
@@ -309,14 +312,21 @@ class _SidebarComponentState extends State<SidebarComponent> {
                           }
                         },
                         onSubmitted: (value) {
-                          // Allow submission with Enter key after typing/pasting
-                          if (value.length == 7 && value.startsWith('#')) {
+                          String cleanHex = value
+                              .replaceAll('#', '')
+                              .trim()
+                              .toUpperCase();
+                          if (cleanHex.length == 6) {
                             try {
                               final color = Color(
-                                int.parse(value.substring(1), radix: 16) +
-                                    0xFF000000,
+                                int.parse(cleanHex, radix: 16) + 0xFF000000,
                               );
                               _updateCurrentColor(color);
+                              widget.onAddColor(color);
+                              // Update text to formatted hex on submit if it was raw
+                              if (!value.startsWith('#') || value.length != 7) {
+                                _hexController.text = _getHexColor(color);
+                              }
                             } catch (e) {
                               // Invalid hex color, reset to current color
                               _hexController.text = _getHexColor(_currentColor);

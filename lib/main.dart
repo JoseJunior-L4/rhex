@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:rhex/services/storage_service.dart';
 import 'screens/palette_creator_screen.dart';
@@ -75,12 +74,12 @@ class _ColorPaletteCreatorAppState extends State<ColorPaletteCreatorApp> {
       theme: ShadThemeData(
         brightness: Brightness.light,
         colorScheme: ShadSlateColorScheme.light(),
-        textTheme: ShadTextTheme.fromGoogleFont(GoogleFonts.poppins),
+        textTheme: ShadTextTheme(family: 'Poppins'),
       ),
       darkTheme: ShadThemeData(
         brightness: Brightness.dark,
         colorScheme: ShadSlateColorScheme.dark(),
-        textTheme: ShadTextTheme.fromGoogleFont(GoogleFonts.poppins),
+        textTheme: ShadTextTheme(family: 'Poppins'),
       ),
       home: PaletteCreatorScreen(
         themeMode: _themeMode,
